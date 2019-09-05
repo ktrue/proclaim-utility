@@ -1,0 +1,1 @@
+a:1:{s:24:"September 1, 2019 Slides";s:36:"./proclaimarchive/2019-09-01_10.json";}
