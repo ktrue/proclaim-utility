@@ -127,11 +127,11 @@ The roadmap is a pure HTML5 page that may be easily printed from the browser, or
 I've included a PDF (and Word™) document that was used for training at our church.  Feel free to modify/expand it for your church's use.
 
 * Proclaim Utility Guide
-  * [Word format](www/docs/Proclaim-Utility-Guide.docx)
-  * [PDF format](www/docs/Proclaim-Utility-Guide.pdf)
+  * Word format in www/docs/Proclaim-Utility-Guide.docx
+  * PDF format in www/docs/Proclaim-Utility-Guide.pdf
 * Sample Roadmap
   * [HTML format](www/docs/Roadmap-sample.html)
-  * [browser printed PDF](www/docs/Roadmap-sample.pdf)
+  * browser printed PDF in www/docs/Roadmap-sample.pdf
 
 ## Reporting problems/issues/suggestions
 
