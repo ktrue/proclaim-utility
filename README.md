@@ -91,8 +91,8 @@ global $SITE;
 
 $SITE['churchName'] = 'Your Church';
 $SITE['churchKeywords'] = 'Your Church, United Church of Christ';
-$SITE['oneLicenceNumber'] = '726183'; // church's OneLicense.net number
-$SITE['CCLILicenseNumber'] = '2541334'; // church's CCLI number for SongSelect
+$SITE['oneLicenceNumber'] = '999999'; // church's OneLicense.net number
+$SITE['CCLILicenseNumber'] = '11111111'; // church's CCLI number for SongSelect
 $SITE['timezone'] = 'America/Los_Angeles';
 # ------------------------------------------------
 # settings for relative location of Proclaim backups (from make-roadmap)
