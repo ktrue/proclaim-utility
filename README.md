@@ -130,7 +130,7 @@ I've included a PDF (and Word™) document that was used for training at our chu
   * [Word format](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Proclaim-Utility-Guide.docx) 
   * [PDF format](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Proclaim-Utility-Guide.pdf)
 * Sample Roadmap
-  * [HTML format](www/docs/Roadmap-sample.html)
+  * [HTML format](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Roadmap-sample.html)
   * [browser printed PDF](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Roadmap-sample.pdf)
 
 ## Reporting problems/issues/suggestions
