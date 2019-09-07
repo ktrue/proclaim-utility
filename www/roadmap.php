@@ -25,10 +25,11 @@
 # Version 1.40 - 08-Aug-2019 - change text formatting logic for text emphasis directives
 # Version 1.50 - 09-Aug-2019 - add support for archival roadmaps by service date
 # Version 1.60 - 30-Aug-2019 - add support for additonal stage cues
+# Version 1.70 - 07-Sep-2019 - use positive indexing to select only Service slides
 #
 include_once("settings-common.php");
 
-$Version = 'roadmap.php - Version 1.60 - 30-Aug-2019';
+$Version = 'roadmap.php - Version 1.70 - 07-Sep-2019';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -127,17 +128,15 @@ $title = "Worship Roadmap - $serviceDate";
 do_print_header($title);
 print "<h3 style=\"text-align:center;margin: 0 auto !important;\">$title</h3>\n";
 
-foreach ($JSON['items'] as $k => $item) {
+for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex++) {
+  $item = $JSON['items'][$kIndex];
 	$title = $item['title'];
 	$kind  = $item['kind'];
 	$lmod  = $item['modifiedDate'];
 	if($lmod > $latestModifiedDate) {
 		$latestModifiedDate = $lmod;
 	}
-	if($item['content']['AutoAdvance'] == 'true') { // skip the pre/post loops+warmup slides
-		//print "$title\t$kind\t(auto-advance)\n";
-		continue;
-	}
+
 	$extraText = '';
 	list($notes,$roadmapText) = decode_notes($item);
 
@@ -213,7 +212,7 @@ foreach ($JSON['items'] as $k => $item) {
 		}
 		if(strlen($other) > 0) {
 			$other = cleanup_html($other);
-			print "<p claass=\"service\">$other</p>\n";
+			print "<p class=\"service\">$other</p>\n";
 		}
 	}
 	print "\n";
