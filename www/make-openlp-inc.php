@@ -24,7 +24,7 @@ The following verse “types” are supported by OpenLP:
 The verse “types” stand for Verse, Chorus, Bridge, Pre-Chorus, Intro, Ending and Other. Any numeric value is allowed after the verse type. The complete verse name in OpenLP always consists of the verse type and the verse number. If not number is present 1 is assumed. 
 */
 $includeMode = isset($doInclude)?true:false;
-$Version = 'make-openlp-inc.php - Version 1.09 - 31-Aug-2019';
+$Version = 'make-openlp-inc.php - Version 1.11 - 07-Oct-2019';
 $vars = array('priorfile','title','author','copyright','ccli','hymnal','hymnalname','verseorder','notes','verses');
 
 $lyricsXMLfiles = glob($SITE['lyricsXMLdir'].'*.xml');
@@ -57,10 +57,13 @@ if(!empty($priorfile) and
   $rawXML = file_get_contents($priorfile);
 	$rawXML = str_replace('<br/>',"\r\n",$rawXML);
 	$rawXML = str_replace('\"','"',$rawXML);
-	$rawXML = str_replace('\u2019',"'",$rawXML);
-	$rawXML = str_replace('\u00a9','(c)',$rawXML);
-	$rawXML = str_replace('\u00ae','TM',$rawXML);
-	//$rawXML = str_replace('&amp;','&',$rawXML);
+	#$rawXML = str_replace('\u2019',"'",$rawXML);
+	#$rawXML = str_replace('\u201c','"',$rawXML);
+	#$rawXML = str_replace('\u201d','"',$rawXML);
+	#$rawXML = str_replace('\u2029','',$rawXML);
+	#$rawXML = str_replace('\u00a9','(c)',$rawXML);
+	#$rawXML = str_replace('\u00ae','TM',$rawXML);
+	#$rawXML = str_replace('&amp;','&',$rawXML);
 
   $Xsong = simplexml_load_string($rawXML);
 	//print "<pre>\n".print_r($Xsong,true)." </pre>\n";
@@ -308,11 +311,11 @@ importing song lyrics into Proclaim as a Song file for the worship service.<br /
 </tr>  
 <tr>
  <td class="label"><label for="verseorder">VerseOrder:</label></td>
- <td class="input">Optional: use like v1 c1 v2 c1 e1 to set order of verses<br/><input type="text" name="verseorder" size="80" value="<?php echo $verseorder; ?>"/></td>
+ <td class="input">Optional: use like <strong>v1 c1 v2 c1 e1</strong> to set order of verses with blank separators as shown<br/><input type="text" name="verseorder" size="80" value="<?php echo $verseorder; ?>"/></td>
 </tr>  
 <tr>
  <td class="label"><label for="verses">Verses:</label></td>
- <td class="input">Note: delimit verses with <strong>Verse 1: Chorus 1: Pre-Chorus 1: Bridge 1: Intro 1: Ending 1: Other 1:</strong> before verse paragraph, and end with blank line between verses. If marking omitted, v1,v2,v3... will be assumed.<br/><textarea name="verses" cols="80" rows="10"><?php echo $verses; ?></textarea></td>
+ <td class="input">Note: delimit verses with <strong>Verse 1: Chorus 1: Pre-Chorus 1: Bridge 1: Intro 1: Ending 1: Other 1:</strong> before verse paragraph, and end with blank line between verses. If marking omitted, <strong>v1 v2 v3</strong>... will be assumed.<br/><textarea name="verses" cols="80" rows="10"><?php echo $verses; ?></textarea></td>
 </tr> 
 <tr>
  <td class="label"><label for="notes">Comments:<br/>(Optional)</label></td>
@@ -444,12 +447,15 @@ function fixup_txt_verseorder($text) {
 }
 
 function utf8fix($txt) {
-	$t = json_encode($txt);
+	$t = json_encode($txt,JSON_UNESCAPED_UNICODE);
 	$t = substr($t,1,strlen($t)-2);
 	$t = str_replace('<br\/>','<br/>',$t);
-	$t = str_replace('\u2019',"'",$t);
-	$t = str_replace('\u00a9','(c)',$t);
-	$t = str_replace('\u00ae','TM',$t);
+#	$t = str_replace('\u2019',"'",$t);
+#	$t = str_replace('\u00a9','(c)',$t);
+#	$t = str_replace('\u00ae','TM',$t);
+#	$t = str_replace('\u201c','"',$t);
+#	$t = str_replace('\u201d','"',$t);
+	$t = str_replace('\u2029','',$t);
 	$t = str_replace('\"','"',$t);
 	$t = str_replace('&','&amp;',$t);
 
