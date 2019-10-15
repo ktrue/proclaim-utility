@@ -26,6 +26,7 @@
 # Version 1.50 - 09-Aug-2019 - add support for archival roadmaps by service date
 # Version 1.60 - 30-Aug-2019 - add support for additonal stage cues
 # Version 1.70 - 07-Sep-2019 - use positive indexing to select only Service slides
+# Version 1.71 - 15-Oct-2019 - change starting '--' in content to blank line
 #
 include_once("settings-common.php");
 
@@ -554,7 +555,11 @@ function xml_to_html($XML) {
 			$S .= '<span style="color: #'.$doColorValue.';">';
 			$E = '</span>'. $E;
 		}
-		$output .= $S.$T['attributes']['TEXT'].$E;
+		$rText = $T['attributes']['TEXT'];
+		if(trim($rText) === '--') {
+			$rText = ''; // remove new-page markers
+		}
+		$output .= $S.$rText.$E;
 	}
 	
 	
