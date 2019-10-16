@@ -27,10 +27,11 @@
 # Version 1.60 - 30-Aug-2019 - add support for additonal stage cues
 # Version 1.70 - 07-Sep-2019 - use positive indexing to select only Service slides
 # Version 1.71 - 15-Oct-2019 - change starting '--' in content to blank line
+# Version 1.72 - 16-Oct-2019 - fix lyrics display with embedded blank-line marker '--'
 #
 include_once("settings-common.php");
 
-$Version = 'roadmap.php - Version 1.70 - 07-Sep-2019';
+$Version = 'roadmap.php - Version 1.72 - 16-Oct-2019';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -265,7 +266,7 @@ function decode_lyrics($item) {
 	$lyricsText = '';
 	$other = '';
   if(strlen($rawLyricsXML) > 10) {
-    list($lyricsText,$other) = xml_to_html($rawLyricsXML);
+    list($lyricsText,$other) = xml_to_html($rawLyricsXML,false);
 	}
 	
 	$formattedSong = format_song($lyricsText,$verseOrder,$copyright,$hymn);
@@ -441,7 +442,7 @@ function format_song($lyricsText,$verseOrder,$copyright,$hymn) {
 
 # ----------------------------------------------------------
 
-function xml_to_html($XML) {
+function xml_to_html($XML,$removeBlankLines=true) {
   
 	# main routine to parse the XML, extract and apply HTML formatting to the text 
 	# by walking the array of the XML in the array $vals from xml_parse_into_struct call
@@ -556,7 +557,7 @@ function xml_to_html($XML) {
 			$E = '</span>'. $E;
 		}
 		$rText = $T['attributes']['TEXT'];
-		if(trim($rText) === '--') {
+		if(trim($rText) === '--' and $removeBlankLines) {
 			$rText = ''; // remove new-page markers
 		}
 		$output .= $S.$rText.$E;
