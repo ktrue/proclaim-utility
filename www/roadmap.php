@@ -28,6 +28,7 @@
 # Version 1.70 - 07-Sep-2019 - use positive indexing to select only Service slides
 # Version 1.71 - 15-Oct-2019 - change starting '--' in content to blank line
 # Version 1.72 - 16-Oct-2019 - fix lyrics display with embedded blank-line marker '--'
+# Version 1.73 - 22-Oct-2019 - added CCLI song+license display to songs in roadmap output.
 #
 include_once("settings-common.php");
 
@@ -260,6 +261,11 @@ function decode_lyrics($item) {
 	//$rawLyricsXML = preg_replace('!<span[^>]*>!Uis','',$rawLyricsXML);
 	//$rawLyricsXML = preg_replace('!</span>!Uis','',$rawLyricsXML);
 	$copyright = isset($item['content']['_textfield:Copyright'])?$item['content']['_textfield:Copyright']:'';
+	$copyright .= isset($item['content']['_textfield:Song Number'])?
+	    ' CCLI Song #'.$item['content']['_textfield:Song Number']:'';
+	$copyright .= (isset($item['content']['_textfield:License Number']) and
+	              isset($item['content']['_textfield:Song Number']) ) ?
+	    ' used under CCLI license #'.$item['content']['_textfield:License Number']:'';
 	$hymn =      isset($item['content']['_textfield:Hymn Number'])?$item['content']['_textfield:Hymn Number']:'';
 	$useVerseOrder = isset($item['content']['CustomOrderSlides'])?$item['content']['CustomOrderSlides']:'';
 	$verseOrder = isset($item['content']['CustomOrderSequence'])?$item['content']['CustomOrderSequence']:'';
