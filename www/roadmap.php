@@ -29,10 +29,13 @@
 # Version 1.71 - 15-Oct-2019 - change starting '--' in content to blank line
 # Version 1.72 - 16-Oct-2019 - fix lyrics display with embedded blank-line marker '--'
 # Version 1.73 - 22-Oct-2019 - added CCLI song+license display to songs in roadmap output.
+# Version 1.80 - 23-Oct-2019 - add support for imported PPT native and slide images
+# Versopm 1.81 - 03-Dec-2019 - fix CCLI song display
+# Version 1.82 - 19-Feb-2020 - fix CCLI song display (again)
 #
 include_once("settings-common.php");
 
-$Version = 'roadmap.php - Version 1.72 - 16-Oct-2019';
+$Version = 'roadmap.php - Version 1.82 - 19-Feb-2020';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -186,6 +189,11 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		$extraText = "($play of <a href=\"" . $item['content']['PageUrl']."\" target=\"_blank\">".
 		             $item['content']['PageUrl']."</a> )";
 	}
+	if($kind == 'PowerPointDriven') {
+		$play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
+		$extraText = "($play of " . $item['content']['FilePath'].
+		             " )";
+	}
 	if($kind == 'StageDirectionCue') {
 			$rawXML = '<xmlstuff>'.(string)$item['content']['StageDirectionDetails'].'</xmlstuff>';
 	    $rawXML = xml_spanfix($rawXML);
@@ -261,12 +269,14 @@ function decode_lyrics($item) {
 	//$rawLyricsXML = preg_replace('!<span[^>]*>!Uis','',$rawLyricsXML);
 	//$rawLyricsXML = preg_replace('!</span>!Uis','',$rawLyricsXML);
 	$copyright = isset($item['content']['_textfield:Copyright'])?$item['content']['_textfield:Copyright']:'';
-	$copyright .= isset($item['content']['_textfield:Song Number'])?
-	    ' CCLI Song #'.$item['content']['_textfield:Song Number']:'';
-	$copyright .= (isset($item['content']['_textfield:License Number']) and
-	              isset($item['content']['_textfield:Song Number']) ) ?
-	    ' used under CCLI license #'.$item['content']['_textfield:License Number']:'';
-	$hymn =      isset($item['content']['_textfield:Hymn Number'])?$item['content']['_textfield:Hymn Number']:'';
+  if(!empty($item['content']['_textfield:Song Number'])) {
+		$copyright .= ' CCLI Song #'.$item['content']['_textfield:Song Number'];
+	}
+	if(!empty($item['content']['_textfield:License Number']) and 
+	   !empty($item['content']['_textfield:Song Number']) ) {
+		$copyright .= ' used under CCLI license #'.$item['content']['_textfield:License Number'];
+	}
+	$hymn =      !empty($item['content']['_textfield:Hymn Number'])?$item['content']['_textfield:Hymn Number']:'';
 	$useVerseOrder = isset($item['content']['CustomOrderSlides'])?$item['content']['CustomOrderSlides']:'';
 	$verseOrder = isset($item['content']['CustomOrderSequence'])?$item['content']['CustomOrderSequence']:'';
 	$lyricsText = '';
@@ -438,7 +448,7 @@ function format_song($lyricsText,$verseOrder,$copyright,$hymn) {
 	}
 
 //	$out .= print_r($Verses,true)."\n";
-	$out .= "<small>$copyright</small>\n";
+	$out .= "<span style=\"font-size: 10pt;\">$copyright</span>\n";
 	
 //	$out .= "--------\n";
 	
@@ -667,7 +677,7 @@ function do_print_header($title) {
 <head>
 <meta charset="UTF-8">
 <meta name="author" content="Ken True">
-<meta name="copyright" content="&copy; 2019, CampbellUCC.org">
+<meta name="copyright" content="&copy; <?php echo gmdate('Y'); ?>, CampbellUCC.org">
 <meta name="Keywords" content="worship service roadmap faithlife proclaim">
 <meta name="Description" content="Display worship service roadmap from backup Proclaim .prs slide backup">
 <meta name="Robots" content="index,nofollow">
