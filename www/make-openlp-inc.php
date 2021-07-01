@@ -1,6 +1,6 @@
 <?php
 # ------------------------------------------------
-# https://github.com/ktrue/proclaim-utility general webpage harness 
+# https://github.com/ktrue/proclaim-utility general webpage harness
 # make-openlp-inc.php
 # License:  GNU GPLV3
 # Author: Ken True
@@ -21,10 +21,10 @@ The following verse “types” are supported by OpenLP:
         e
         o
 
-The verse “types” stand for Verse, Chorus, Bridge, Pre-Chorus, Intro, Ending and Other. Any numeric value is allowed after the verse type. The complete verse name in OpenLP always consists of the verse type and the verse number. If not number is present 1 is assumed. 
+The verse “types” stand for Verse, Chorus, Bridge, Pre-Chorus, Intro, Ending and Other. Any numeric value is allowed after the verse type. The complete verse name in OpenLP always consists of the verse type and the verse number. If not number is present 1 is assumed.
 */
 $includeMode = isset($doInclude)?true:false;
-$Version = 'make-openlp-inc.php - Version 1.11 - 07-Oct-2019';
+$Version = 'make-openlp-inc.php - Version 1.12 - 01-Jul-2021';
 $vars = array('priorfile','title','author','copyright','ccli','hymnal','hymnalname','verseorder','notes','verses');
 
 $lyricsXMLfiles = glob($SITE['lyricsXMLdir'].'*.xml');
@@ -40,7 +40,7 @@ foreach ($vars as $i => $varname) {
 
 if(isset($_FILES['upload']['tmp_name'])) {
 	$priorfile = $_FILES['upload']['tmp_name'];
-} 
+}
 
 if (isset($_POST['uploadlocal']) and isset($_POST['uploadprior']) ) {
 	 $tidx = trim($_POST['uploadlocal']) -1;
@@ -51,8 +51,8 @@ if (isset($_POST['uploadlocal']) and isset($_POST['uploadprior']) ) {
 	 }
 }
 
-if(!empty($priorfile) and 
-    file_exists($priorfile) and 
+if(!empty($priorfile) and
+    file_exists($priorfile) and
 		!isset($_POST['download'])) { // load up the defaults from a prior saved file
   $rawXML = file_get_contents($priorfile);
 	$rawXML = str_replace('<br/>',"\r\n",$rawXML);
@@ -68,7 +68,7 @@ if(!empty($priorfile) and
   $Xsong = simplexml_load_string($rawXML);
 	//print "<pre>\n".print_r($Xsong,true)." </pre>\n";
 	$XML = $Xsong->properties;
-	
+
 	if(isset($XML->titles->title)) {
 		$title = (string)$XML->titles->title;
 	}
@@ -121,7 +121,7 @@ Christ is spoken and seen and heard.
 )
  -->
  */
-   $type = (string)$v{'name'};
+   $type = (string)$v['name'];
 	 $verse = (string)$v->lines;
 	 $tlong = $vtypes[substr($type,0,1)]. substr($type,1).':'."\n";
 	 if($k>0) {
@@ -136,7 +136,7 @@ date_default_timezone_set($SITE['timezone']);
 $timeStamp = date('c');
 // print "<pre>".print_r($_POST,true)."</pre>\n";
 if(isset($_POST['download'])  and
-   isset($_POST['convertto']) and 
+   isset($_POST['convertto']) and
 	 $_POST['convertto'] == 'OpenLP') { // do the conversion
 //print "<p>Download XML entered</p>\n";
 $output = "<?xml version='1.0' encoding='UTF-8'?>\n";
@@ -181,17 +181,17 @@ $output .= '  </properties>
 }
 
 if(isset($_POST['download'])  and
-   isset($_POST['convertto']) and 
+   isset($_POST['convertto']) and
 	 $_POST['convertto'] == 'Mediashout') { // do the conversion
   list($lyrics,$defaultorder) = gen_txt_lyrics($verses);
 	$useorder = !empty($verseorder)?fixup_txt_verseorder($verseorder):$defaultorder;
 
-  $output = 
+  $output =
 'Title: '.$title.'
 Author: '.$author.'
 Copyright: '.$copyright.'
 CCLI: '.$ccli.'
-Song ID: 
+Song ID:
 Hymnal: '.$hymnal.'
 Notes: '.$notes.'
 PlayOrder: '.$useorder.'
@@ -254,13 +254,13 @@ importing song lyrics into Proclaim as a Song file for the worship service.<br /
   <td class="input">Local file:<br /><input type="file" accept=".xml" name="upload"></td>
   <td class="input">Server file:<br /><select name="uploadlocal" style="max-width: 250px; width: 250px;">
 <?php
-  print "<option value=\"0\">--select server file--</option>\n"; 
+  print "<option value=\"0\">--select server file--</option>\n";
   foreach ($lyricsXMLfiles as $n => $fname) {
 		$idx = $n+1;
 		$tfname = format_filename_display($fname);
 		print "<option value=\"$idx\">$tfname</option>\n";
 	}
-?>  
+?>
   </select>
   </td>
   <td class="button"><br/><input type="submit" value="Load OpenLP .xml file" name="uploadprior"></td>
@@ -281,16 +281,16 @@ importing song lyrics into Proclaim as a Song file for the worship service.<br /
 <tr>
  <td class="label"><label for="title">Title:</label></td>
  <td class="input"><input type="text" name="title" size="80" value="<?php echo $title; ?>" /></td>
-</tr> 
+</tr>
 <tr>
  <td class="label"><label for="author">Author:</label></td>
  <td class="input"><input type="text" name="author" size="80" value="<?php echo $author; ?>"/></td>
-</tr>  
+</tr>
 </td>
 <tr>
  <td class="label"><label for="copyright">Copyright:</label></td>
  <td class="input"><input type="text" name="copyright" size="80" value="<?php echo $copyright; ?>"/></td>
-</tr>  
+</tr>
 <tr>
  <td class="label"><label for="ccli">CCLI #:</label></td>
  <td class="input"><input type="text" name="ccli" size="80" value="<?php echo $ccli; ?>"/></td>
@@ -299,7 +299,7 @@ importing song lyrics into Proclaim as a Song file for the worship service.<br /
  <td class="label"><label for="hymnal">Hymnal #:</label></td>
  <td class="input">Optional for songs from a Hymnal:<br />
  <select name="hymnalname">
-<?php 
+<?php
  foreach ($SITE['hymnalList'] as $i => $hname) {
 	 print "  <option value=\"$hname\"";
 	 if($hymnalname == $hname) { print " selected=\"selected\""; }
@@ -308,23 +308,23 @@ importing song lyrics into Proclaim as a Song file for the worship service.<br /
 ?>
  </select><br/>
  <input type="text" name="hymnal" size="80" value="<?php echo $hymnal; ?>"/></td>
-</tr>  
+</tr>
 <tr>
  <td class="label"><label for="verseorder">VerseOrder:</label></td>
  <td class="input">Optional: use like <strong>v1 c1 v2 c1 e1</strong> to set order of verses with blank separators as shown<br/><input type="text" name="verseorder" size="80" value="<?php echo $verseorder; ?>"/></td>
-</tr>  
+</tr>
 <tr>
  <td class="label"><label for="verses">Verses:</label></td>
  <td class="input">Note: delimit verses with <strong>Verse 1: Chorus 1: Pre-Chorus 1: Bridge 1: Intro 1: Ending 1: Other 1:</strong> before verse paragraph, and end with blank line between verses. If marking omitted, <strong>v1 v2 v3</strong>... will be assumed.<br/><textarea name="verses" cols="80" rows="10"><?php echo $verses; ?></textarea></td>
-</tr> 
+</tr>
 <tr>
  <td class="label"><label for="notes">Comments:<br/>(Optional)</label></td>
  <td class="input"><textarea name="notes" cols="80" rows="4"><?php echo $notes; ?></textarea></td>
-</tr> 
+</tr>
 <tr>
  <td class="button" colspan="2"> <input type="submit" name="download" value="Download" /></td>
 </tr>
-</table> 
+</table>
 </form>
 <p>&nbsp;</p>
 
@@ -350,11 +350,11 @@ function gen_xml_lyrics($text) {
   </lyrics>
 */
   // file_put_contents('test-post-verses.txt',$text);
-	
+
 	$out = "  <lyrics>\n";
 	$debug = '';
 	$verses = explode("\r\n\r\n",$text."\r\n\r\n");
-	
+
 	foreach ($verses as $i => $verse) {
 		$tverse = trim($verse);
 		$debug .= "$i '$tverse'\n";
@@ -374,7 +374,7 @@ function gen_xml_lyrics($text) {
 		if(strlen($tverse) > 1) {
 			$out .= "    <verse name=\"$vtype$vnum\">\n";
 			$out .= "       <lines>".utf8fix($tverse)."</lines>\n";
-			$out .= "    </verse>\n";	
+			$out .= "    </verse>\n";
 		}
 	}
 	$out .= "  </lyrics>\n";
@@ -388,7 +388,7 @@ function gen_txt_lyrics($text) {
 	$out = '';
 	$verses = explode("\r\n\r\n",$text."\r\n\r\n");
 	$debug = '';
-	
+
 	foreach ($verses as $i => $verse) {
 		$tverse = trim($verse);
 		$debug .= "$i '$tverse'\n";
@@ -426,10 +426,10 @@ function fixup_txt_verseorder($text) {
 	 'p' => 'Pre-Chorus',
 	 'o' => 'Other'
 	);
-	
+
 	$orders = explode(' ',$text.' ');
 	$out = '';
-	
+
 	foreach ($orders as $i => $abbrev) {
 		if(strlen($abbrev) < 1) { break; }
 		if(preg_match('!^([vceb])(\d+)$!i',$abbrev,$m)) {
@@ -467,7 +467,7 @@ function offer_download($file,$content) {
     header("Content-Description: File Transfer");
     header("Content-Length: ". strlen($content).";");
     header("Content-Disposition: attachment; filename=\"$file\"");
-    header("Content-Type: application/octet-stream; "); 
+    header("Content-Type: application/octet-stream; ");
     header("Content-Transfer-Encoding: binary");
     print $content;
 		if(strpos($file,'.xml') !== false) { // only save the .xml versions
