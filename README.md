@@ -73,6 +73,7 @@ __./temp-proclaim/__ - storage for a uploaded __backup.prs__ file (uploaded by F
   * __proclaim-songs-used.php__  - list/query songs included in the uploaded Proclaim .PRS slides in roadmaps
 * roadmap generation and display scripts
   * __make-roadmap.php__ - script to upload Proclaim .prs file and display (via __roadmap.php__) the roadmap.
+  * __process-roadmap.php__ - script to read ./temp-proclaim/backup.prs file uploaded by FTP/SCP and create the needed .json and .txt files for __roadmap.php__ to use.
   * __roadmap.php__ - main script to parse selected BackupPresentation.json file and generate the HTML5 roadmap display
 * files automatically maintained:
   * __last-update.txt__ - modified with timestamp of last upload done through __make-roadmap.php__ script.
@@ -142,10 +143,14 @@ I've included a PDF (and Word™) document that was used for training at our chu
 * Proclaim Utility Guide
   * [Word format](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Proclaim-Utility-Guide.docx)
   * [PDF format](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Proclaim-Utility-Guide.pdf)
-* Sample Roadmap
+* Sample Roadmap (original format)
   * [HTML format](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Roadmap-sample.html)
   * [browser printed PDF](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Roadmap-sample.pdf)
+* Sample Roadmaps (new format)
+  * Participant roadmap [HTML format](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Roadmap-sample2.html) or [browser printed PDF](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Roadmap-sample2.pdf)
+  * AV Tech roadmap [HTML format](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Roadmap-sample2-avtech.html) or [browser printed PDF](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Roadmap-sample2-avtech.pdf)
+  * Summary roadmap [HTML format](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Roadmap-sample2-summary.html) or [browser printed PDF](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Roadmap-sample2-summary.pdf)
 
-## Reporting problems/issues/suggestions
+ ## Reporting problems/issues/suggestions
 
 Please use the GitHub Issues area to report issues or make suggestions for additions to the script set.
