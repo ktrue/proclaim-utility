@@ -32,10 +32,16 @@
 # Version 1.80 - 23-Oct-2019 - add support for imported PPT native and slide images
 # Versopm 1.81 - 03-Dec-2019 - fix CCLI song display
 # Version 1.82 - 19-Feb-2020 - fix CCLI song display (again)
+# Version 1.90 - 24-Jun-2021 - add support for audio and video listings
+# Version 1.91 - 19-Jul-2021 - added ?avtech CSS option
+# Version 1.92 - 20-Jul-2021 - added ?summary CSS option
+# Version 1.93 - 23-Jul-2021 - added Updated: at top of display, vsignal index
+# Version 1.94 - 24-Jul-2021 - additional info on Lighting Signals
+# Version 1.95 - 26-Jul-2021 - added display of AutoAdvance slides in titles with vsignal format
 #
 include_once("settings-common.php");
 
-$Version = 'roadmap.php - Version 1.82 - 19-Feb-2020';
+$Version = 'roadmap.php - Version 1.95 - 26-Jul-2021';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -72,6 +78,10 @@ if(isset($_GET['show'])) {
 	}
 }
 
+$aFile = str_replace('.json','-alljson.txt',$tFile);
+$allJSON = array();
+if (file_exists($aFile)) { $allJSON = unserialize(file_get_contents($aFile)); }
+
 if(isset($_GET['list']) and !isset($_FILES['upload']['tmp_name'])) {
 	do_print_header('Worship Roadmap List');
 	if(!empty($extraText)) { print $extraText; }
@@ -82,7 +92,7 @@ if(isset($_GET['list']) and !isset($_FILES['upload']['tmp_name'])) {
 		$link = str_replace($archiveDir,'',$file);
 		$link = str_replace('.json','',$link);
 		
-		print "<li><a href=\"?show=$link\">$name</a></li>\n";
+		print "<li><a href=\"?show=$link\">$name Roadmap</a> | <a href=\"?show=$link&amp;avtech\">with A/V cues</a> | <a href=\"?show=$link&amp;summary\">Summary/Outline</a></li>\n";
 	}
 	print "</ul>\n";
 	do_print_footer("<small><small>$Version</small></small>");
@@ -105,6 +115,8 @@ if(!empty($priorfile)) {
 	$zip = new ZipArchive;
 	$zip->open($priorfile);
 	$rawJSON = $zip->getFromName('BackupPresentation.json');
+	$allJSON = array();
+	$allJSON = get_zipfile_json($zip);
 	$zip->close();
 	if(strlen($rawJSON) > 100) {
 	  $JSON = json_decode($rawJSON,true);
@@ -112,6 +124,10 @@ if(!empty($priorfile)) {
 		$proclaimName = $JSON['title'];
 		$availableFiles[$proclaimName] = "$archiveDir$fileName.json";
 	  file_put_contents($archiveDir.$fileName.'.json',$rawJSON);
+		if(count($allJSON) > 0) {
+			file_put_contents($archiveDir.$fileName.'-alljson.txt',
+				 serialize($allJSON) );
+		}
 		if(is_uploaded_file($priorfile)) {
 			move_uploaded_file($priorfile,$archiveDir.$fileName.'.prs');
 			if(file_exists($priorfile)) { unlink($priorfile); }
@@ -128,26 +144,45 @@ if(!empty($priorfile)) {
 $serviceDate = date('F d, Y',strtotime($JSON['dateGiven']));
 
 $latestModifiedDate = '';
+$Signals = array();
+if(file_exists("./signals-list.txt")) {
+	include_once("./signals-list.txt");
+} else {
+	$SignalsList = array();
+}
+
+for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex++) {
+  $item = $JSON['items'][$kIndex];
+	$lmod  = $item['modifiedDate'];
+	if($lmod > $latestModifiedDate) {
+		$latestModifiedDate = $lmod;
+	}
+}
 
 $title = "Worship Roadmap - $serviceDate";
+if(isset($_GET['avtech'])) {
+	$title = "A/V Tech - " . $title;
+}
+if(isset($_GET['summary'])) {
+	$title = "Summary " . $title;
+}
 
 do_print_header($title);
-print "<h3 style=\"text-align:center;margin: 0 auto !important;\">$title</h3>\n";
 
+print "<h3 style=\"text-align:center;margin: 0 auto !important;\">$title</h3>\n";
+print "<h5 style=\"text-align:center;margin: 0 auto !important;\">Updated: ".date('l, F d, Y g:i:sa',strtotime($latestModifiedDate))."</h5>\n";
+print "<!-- ".count($allJSON)." allJSON entries loaded -->\n";
 for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex++) {
   $item = $JSON['items'][$kIndex];
 	$title = $item['title'];
 	$kind  = $item['kind'];
 	$lmod  = $item['modifiedDate'];
-	if($lmod > $latestModifiedDate) {
-		$latestModifiedDate = $lmod;
-	}
 
 	$extraText = '';
 	list($notes,$roadmapText) = decode_notes($item);
 
 	if($kind == "AudioRecordingCue") {
-		print "<p class=\"avcue\">Automatic: $title</p>\n";
+		print "<p class=\"vsignal\"><small><em>[Proclaim event: $title]</em></small></p>\n";
 		continue;
 		
 	}
@@ -162,9 +197,17 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		 }
 		 $hymn =      isset($item['content']['_textfield:Hymn Number'])?$item['content']['_textfield:Hymn Number']:'';
 		 if(strlen($hymn) > 0) { 
-		   $title = "Hymn: $title ($hymn)";
+		   $title = "Song: \"<em>$title</em>\" ($hymn)";
 		 } else {
-		   $title = "Song: $title";
+		   $title = "Song: \"<em>$title</em>\"";
+		 }
+		 if(isset($item['content']['Audio'])) {
+			 $tJ = json_decode($item['content']['Audio'],true);
+			 if(isset($tJ['audioTracks']) and count($tJ['audioTracks']) > 0) {
+				$t = get_audio_info($tJ['audioTracks'],$allJSON);
+		    $play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
+			  $extraText = " <small><em>[$play Audio Track $t]</em></small><br/>" . $extraText;
+			 }
 		 }
 			 
 	}
@@ -194,6 +237,11 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		$extraText = "($play of " . $item['content']['FilePath'].
 		             " )";
 	}
+	if($kind == 'Video') {
+		$play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
+		$t = get_video_info($item['media'],$allJSON);
+		$extraText .= " <small><em>[$play of Video$t]</em></small><br/>";
+	}
 	if($kind == 'StageDirectionCue') {
 			$rawXML = '<xmlstuff>'.(string)$item['content']['StageDirectionDetails'].'</xmlstuff>';
 	    $rawXML = xml_spanfix($rawXML);
@@ -202,20 +250,31 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		$extraText = cleanup_html($extraText);
 		$extraText = str_replace("\n","<br/>\n",$extraText);
 	}
-
 	if(strlen($notes)> 1) { // AV cues before heading
 		$notes = str_replace("\n","<br/>\n",$notes);
 	  print "<p class=\"avcue\">$notes</p>\n";
+	}
+  if(isset($item['signals']) and count($item['signals']) > 0) {
+		$txt = decode_signal($item,$kIndex);
+		if(strlen($txt) > 1) {
+		 print "<p class=\"vsignal\">$txt</p>\n";
+		}
 	}
 	if(strlen($roadmapText) > 0) { // add any extra text to the roadmap
 		$roadmapText = str_replace("\n","<br/>\n",$roadmapText);
 		$extraText .= "<br/>\n".$roadmapText;
 	}
+	$autoAdvanceText = decode_autoadvance($item);
+	if(strlen($autoAdvanceText) > 0) {
+		$autoAdvanceText = "  <span class=\"vsignal\"><small>(".$autoAdvanceText.")</small></span>";
+	}
+	
 	if($kind !== 'StageDirectionCue') {
-		print "<p class=\"section\"><strong>$title</strong></p>\n";  // slide name is underlined heading
+		print "<p class=\"section\"><strong>$title</strong>$autoAdvanceText</p>\n";  // slide name is underlined heading
 		if(strlen($extraText) > 1) { // print all following stuff in slide if need be
-			$extraText = cleanup_html($extraText);
-			print "<p class=\"service\">$extraText</p>\n";
+		  print "<!-- extraText='$extraText' -->\n";
+			$extraText = cleanup_html(trim($extraText));
+			print "<p class=\"service\"><!-- extraText -->$extraText</p>\n";
 		}
 	} else { // special handling for stage direction
 		if(strlen($extraText) > 0) {
@@ -223,7 +282,8 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		}
 		if(strlen($other) > 0) {
 			$other = cleanup_html($other);
-			print "<p class=\"service\">$other</p>\n";
+			$other = str_replace("\n","<br/>\n",$other);
+			print "<p class=\"service\"><!-- other -->$other</p>\n";
 		}
 	}
 	print "\n";
@@ -233,7 +293,11 @@ $footerText .= "from Proclaim slides '<strong>".$JSON['title']."</strong>' for t
                $JSON['startTime']."</strong> worship service.<br/>";
 $footerText .= "Slide set was last modified on <strong>".date('l, F d, Y g:i:sa',strtotime($latestModifiedDate)).
                "</strong></small></small>";
+print "<!-- Lighting Signals Found\n".var_export($Signals,true)." -->\n";
 
+if(count($SignalsList) > 0) {
+	print "<!-- Lighting Signals known via ./SignalsList.txt\n".var_export($SignalsList,true)." -->\n";
+}
 do_print_footer($footerText);
 
 # ----------------------------------------------------------
@@ -360,6 +424,85 @@ function decode_bible_passage($item) {
 }
 
 # ----------------------------------------------------------
+
+function decode_signal($item,$slideNumber) {
+	global $Signals,$SignalsList;
+	
+	$out = '';
+	if(!isset($item['signals']) or count($item['signals']) < 1) {
+		return '';
+	}
+	foreach ($item['signals'] as $i => $signal) {
+/*
+        {
+          "id": "741c22b7-09b9-4bb2-9b0b-361d243b90ea",
+          "signalKind": "SceneSignal",
+          "parameters":
+          {
+            "SceneId": "0466979b-0542-44bb-b605-a7122b4b852c",
+            "FirePerSlide": "false"
+          },
+          "validationState": "none",
+          "isValid": false
+        }
+*/
+		if ($signal['signalKind'] !== 'SceneSignal') { continue; }
+		$out .= "<!-- signal: \n".var_export($signal,true)." -->\n";
+		//$out .= 'Signal for ID: '.$signal['id'].' ';
+		$key = $signal['parameters']['SceneId'];
+		$title = $item['title'];
+		if(isset($SignalsList[$key])) {
+			$out .= "Video: select <strong>".$SignalsList[$key]."</strong> scene as program ";
+		} else {
+		  $out .= 'SceneId: '.$signal['parameters']['SceneId'].' ';
+		}
+		#$out .= $signal['parameters']['FirePerSlide']=="true"?'Fire-Per-Slide':'Fire-Once';
+		$out .= "<!-- (validationState=".$signal['validationState']." ;";
+		$out .= "isValid=";
+		$out .= $signal['isValid']==true?'true':'false';
+		$out .= ") --> \n";
+		if(!isset($Signals[$key])) {
+			$Signals[$key]= array("$slideNumber: $title");
+		} else {
+			$Signals[$key][] = "$slideNumber: $title";
+		}
+	}
+	return $out;
+}
+# ----------------------------------------------------------
+
+function decode_autoadvance($item) {
+	$out = '';
+/*
+    {
+      "id": "7579573e-34c1-4865-8ca4-e27e07d4c38c",
+      "kind": "Content",
+      "title": "Goodbye",
+      "modifiedDate": "2021-07-19T02:37:46Z",
+      "content":
+      {
+        "ShowCountdownClock": "false",
+        "CountdownTime": "0001-01-01T00:00:00+00:00",
+        "AdvanceWhenCountdownEnds": "Hide",
+        "AutoAdvance": "true",
+        "AutoAdvanceTime": "PT3S",
+        "Shuffle": "false",
+        "Repeat": "false",
+*/	
+  if(isset($item['content']['AutoAdvance']) and $item['content']['AutoAdvance']=="true") {
+		$out .= "Note: <strong>".$item['title']."</strong> slide will ";
+		$autoTimeInterval = $item['content']['AutoAdvanceTime'];
+		$interval = new DateInterval($autoTimeInterval);
+		$out .= 'Advance after '.$interval->format('%s seconds');
+		//$out .= 'advance after '.$autoTimeInterval;
+		if($item['content']['Repeat']=="true") {
+			$out .= ", and repeat";
+		} else {
+			$out .= "";
+		}
+	}
+	return($out);
+}
 
 function xml_spanfix($inXML) {
 	$t = $inXML;
@@ -497,6 +640,7 @@ function xml_to_html($XML,$removeBlankLines=true) {
 	$listClose = '';
 	$inListItem = false;
 	$closedList = false;
+	$listCount = 0;
 	$paraFont = false;
 	$paraBold = false;
 	$paraItalic = false;
@@ -509,6 +653,7 @@ function xml_to_html($XML,$removeBlankLines=true) {
 	if($T['tag'] == 'LIST' and $T['type'] == 'open') {
 		$inListItem = true;
 		$closedList = false;
+		$listCount++;
 		if($T['attributes']['KIND'] == 'Disc') {
 			$listClose = '</ul>';
 			$output .= "<ul>\n";
@@ -519,9 +664,12 @@ function xml_to_html($XML,$removeBlankLines=true) {
 	}
 	if($T['tag'] == 'LIST' and $T['type'] == 'close') {
 	  $output .= $listClose;
-		$listClose = '';
-		$inListItem = false;
-		$closedList = true;
+		$listCount--;
+		if($listCount < 1) {
+		  $listClose = '';
+		  $inListItem = false;
+		  $closedList = true;
+		}
 	}
 	
 	if($T['tag'] == 'LISTITEM' and $T['type'] == 'open') {
@@ -645,7 +793,7 @@ function get_rgb($in) {
 	} else {
 		$out = '000000'; // black is the default
 	}
-	if(isset($_REQUEST['debugcolor'])) {
+	if(isset($_GET['debugcolor'])) {
 	 list($rH,$gH,$bH) = str_split($out,2);
 	 $r = (integer)hexdec($rH);
 	 $g = (integer)hexdec($gH);
@@ -665,6 +813,11 @@ function cleanup_html($input) {
 	$t = str_replace('li><br/>','li>',$input);
 	$t = str_replace('ol><br/>','ol>',$t);
 	$t = str_replace('ul><br/>','ul>',$t);
+	$t = str_replace('<p></p>','',$t);
+	$t = str_replace('<strong></strong>','',$t);
+	$t = str_replace('<em></em>','',$t);
+	$t = preg_replace('!^<br/>\s+!is','',$t);
+	$t = preg_replace('!<br/>\s+$!is','',$t);
 	return($t);
 	
 }
@@ -684,6 +837,356 @@ function do_print_header($title) {
 <title><?php echo $title; ?></title>
 <style>
 <!--
+<?php print_css(); ?>
+-->
+</style>
+</head>
+
+<body>
+<div class="container">
+  <div class="header"> 
+    <!-- end .header -->
+  </div>
+  <div class="content">
+
+<?php
+}
+
+# ----------------------------------------------------------
+
+function do_print_footer($text) {
+?>
+    <!-- end .content --></div>
+  <div class="footer">
+    <p><?php echo $text; ?></p>
+    <!-- end .footer --></div>
+  <!-- end .container --></div>
+</body>
+</html>
+<?php	
+}
+
+#---------------------------------------------------------  
+# scan zipfile for updated files >= sinceDate
+#---------------------------------------------------------  
+
+function get_zipfile_json ($za) {
+  global $ignoreFiles;
+  	
+  $dirsExcluded = 0;
+  $FLIST = array();
+  // read the directory of the zipfile
+  for ($i=0; $i<$za->numFiles;$i++) {
+	  $z = $za->statIndex($i);
+	  
+	  $fdate = date("Y-m-d H:i T",$z['mtime']);
+	  
+	  $t = $z['name'].'|'.$z['size'].'|'.$z['mtime'].'|'.$fdate;
+	  if($z['size'] > 0 and 
+		   strpos($z['name'],'.json') !== false and
+		   strpos($z['name'],'Backup') == false) { // only print non-directory entries
+		$key = $z['name'];
+		$FLIST[$key] = $fdate."\t".$z['size']."\t".$i;
+	  } else {
+		$dirsExcluded++;
+	  }
+  }
+
+
+  ksort($FLIST);
+  
+  $RFLIST = array();
+  
+  foreach ($FLIST as $key => $val) {
+	  $fname =  $key;
+	  list($fdate,$size,$index) = explode("\t",$val);
+	  
+	  if(preg_match('/\.(json)$/i',$fname) and $index >= 0) {
+		  $tcontents = preg_replace('|\r|is','',$za->getFromIndex($index));
+			$tJ = json_decode($tcontents,true);
+			if(isset($tJ['id'])) {
+	      $RFLIST[$tJ['id']] = $tcontents;
+			}
+	  }
+  }
+
+  return($RFLIST);
+
+} // end get_zipfile_json
+
+function get_audio_info($list,$allJSON) {
+	$t = '';
+	foreach ($list as $i => $key) {
+		if(isset($allJSON[$key])) {
+			$tJ = json_decode($allJSON[$key],true);
+			if(isset($tJ['audio']['title'])) {
+				$t .= " '".$tJ['audio']['title'];
+			}
+			if(isset($tJ['audio']['audioFile']['mediaFileExtensions'][0]['extension'])) {
+				$t .= ".".$tJ['audio']['audioFile']['mediaFileExtensions'][0]['extension'];
+			}
+			$t .= "' ";
+			if(isset($tJ['audio']['duration'])) {
+				$t .= "(".$tJ['audio']['duration'].")";
+			}
+			
+		}
+		
+	}
+	
+	return($t);
+}
+
+function get_video_info($list,$allJSON) {
+	$t = '';
+	foreach ($list as $i => $key) {
+		if(isset($allJSON[$key])) {
+			$tJ = json_decode($allJSON[$key],true);
+			if(isset($tJ['about']['name'])) {
+				$t .= " '".$tJ['about']['name'];
+			}
+			if(isset($tJ['formats']['FourByThree']['fullMediaFile']['mediaFileExtensions'][0]['extension'])) {
+				$t .= ".".$tJ['formats']['FourByThree']['fullMediaFile']['mediaFileExtensions'][0]['extension'];
+			}
+			$t .= "' ";
+			if(isset($tJ['formats']['FourByThree']['videoInfo']['duration'])) {
+				$t .= "(".$tJ['formats']['FourByThree']['videoInfo']['duration'].")";
+			}
+			
+		}
+		
+	}
+//  	
+	return($t);
+}
+
+function print_css() {
+	if(isset($_GET['avtech'])) {
+    print '/* AVTECH special CSS for printing */
+body {
+	font-family: Arial, Helvetica, sans-serif;
+  font-size: 16pt;
+	background-color: #fff;
+	margin: 0;
+	padding: 0;
+	color: #000;
+  /*width: 600px; */
+}
+
+/* ~~ Element/tag selectors ~~ */
+h1, h2, h3, h4, h5, h6, p, div, ol, ul, dl {
+	margin-top: 5px;	 
+	padding-right: 5px;
+	padding-left: 5px; 
+}
+
+ol, ul, dl {
+  padding-left: 40px;
+  padding-right: 10px;
+}
+li {
+  padding-left: 0px;
+  padding-right: 10px;
+  margin-left: 2em;
+  font-size: 12pt;
+}
+li ul {
+  padding-left:0px;
+}
+
+a img { 
+	border: none;
+}
+
+a:link {
+	color: #42413C;
+	text-decoration: underline; 
+}
+a:visited {
+	color: #6E6C64;
+	text-decoration: underline;
+}
+a:hover, a:active, a:focus { 
+	text-decoration: none;
+}
+
+/* ~~ this fixed width container surrounds the other divs ~~ */
+.container {
+	/*width: 800px; */
+	background-color: #FFF;
+	/*margin: 0 auto; /* the auto value on the sides, coupled with the width, centers the layout */
+}
+
+.header {
+	background-color: #ADB96E;
+  font-size: 12pt;
+}
+
+/* ~~ This is the layout information. ~~ 
+*/
+
+.content {
+	padding: 10px 0;
+
+}
+
+.avcue {
+  text-align: left;
+  color: #39F;
+  font-weight: bold;
+  margin: 5px auto !important;
+}
+.service {
+  text-align: left;
+  color: #000;
+  margin-bottom: 1em;
+  margin-left: 2em;
+  font-size: 12pt;
+}
+
+.section {
+  text-align: left;
+  color: #000;
+  text-decoration: none;
+  font-weight: bold;
+  margin-left: 2em;
+    font-size: 12pt;
+
+}
+.stage {
+  text-align: center;
+  color: #C30;
+  font-weight: normal;
+  font-style: italic;
+  margin: 5px auto !important;
+  font-size: 12pt;
+}
+.vsignal {
+	text-align: left;
+	color: green;
+	font-weight: normal;
+	font-style: italic;
+}
+
+/* ~~ The footer ~~ */
+.footer {
+	padding: 10px 0;
+	background-color: #CCC49F;
+}		
+';	
+  return;	
+	} 
+
+	if(isset($_GET['summary'])) {
+
+    print '/* summary CSS for order-of-worship only */
+/* normal CSS for general printing */
+body {
+	font-family: Arial, Helvetica, sans-serif;
+  font-size: 16pt;
+	background-color: #fff;
+	margin: 0;
+	padding: 0;
+	color: #000;
+  /*width: 600px; */
+}
+
+/* ~~ Element/tag selectors ~~ */
+h1, h2, h3, h4, h5, h6, p, div, ol, ul, dl {
+	margin-top: 5px;	 
+	padding-right: 5px;
+	padding-left: 5px; 
+}
+
+ol, ul, dl {
+  padding-left: 40px;
+  padding-right: 10px;
+}
+li {
+  padding-left: 0px;
+  padding-right: 10px;
+	display: none;
+}
+
+a img { 
+	border: none;
+}
+
+a:link {
+	color: #42413C;
+	text-decoration: underline; 
+}
+a:visited {
+	color: #6E6C64;
+	text-decoration: underline;
+}
+a:hover, a:active, a:focus { 
+	text-decoration: none;
+}
+
+/* ~~ this fixed width container surrounds the other divs ~~ */
+.container {
+	/*width: 800px; */
+	background-color: #FFF;
+	/*margin: 0 auto; /* the auto value on the sides, coupled with the width, centers the layout */
+}
+
+.header {
+	background-color: #ADB96E;
+}
+
+/* ~~ This is the layout information. ~~ 
+*/
+
+.content {
+	padding: 10px 0;
+}
+
+.avcue {
+  text-align: center;
+  color: #39F;
+  font-weight: bold;
+  margin: 5px auto !important;
+	display: none;
+}
+.service {
+  text-align: left;
+  color: #000;
+  margin-bottom: 1em;
+	display: none;
+}
+
+.section {
+  text-align: left;
+  color: #000;
+  text-decoration: none;
+  font-weight: lighter;
+	padding: 0px !important;
+	margin: 5px !important;
+}
+
+.stage {
+  text-align: center;
+  color: #C30;
+  font-weight: normal;
+  font-style: italic;
+  margin: 5px auto !important;
+	display: none;
+}
+.vsignal {
+	display: none;
+}
+
+/* ~~ The footer ~~ */
+.footer {
+	padding: 10px 0;
+	background-color: #CCC49F;
+}
+';
+  return;
+}
+
+		print '/* normal CSS for general printing */
 body {
 	font-family: Arial, Helvetica, sans-serif;
   font-size: 16pt;
@@ -749,6 +1252,7 @@ a:hover, a:active, a:focus {
   color: #39F;
   font-weight: bold;
   margin: 5px auto !important;
+	display: none;
 }
 .service {
   text-align: left;
@@ -759,7 +1263,7 @@ a:hover, a:active, a:focus {
 .section {
   text-align: left;
   color: #000;
-  text-decoration: underline;
+  text-decoration: none;
   font-weight: bold;
 }
 .stage {
@@ -769,37 +1273,15 @@ a:hover, a:active, a:focus {
   font-style: italic;
   margin: 5px auto !important;
 }
+.vsignal {
+	display: none;
+}
 
 /* ~~ The footer ~~ */
 .footer {
 	padding: 10px 0;
 	background-color: #CCC49F;
 }
-
--->
-</style>
-</head>
-
-<body>
-<div class="container">
-  <div class="header"> 
-    <!-- end .header -->
-  </div>
-  <div class="content">
-
-<?php
-}
-
-# ----------------------------------------------------------
-
-function do_print_footer($text) {
-?>
-    <!-- end .content --></div>
-  <div class="footer">
-    <p><?php echo $text; ?></p>
-    <!-- end .footer --></div>
-  <!-- end .container --></div>
-</body>
-</html>
-<?php	
+';
+	
 }

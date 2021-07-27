@@ -18,6 +18,17 @@ Our worship service preparation process is now:
 * Proclaim slides are backed up to local copy, and uploaded to website where the worship roadmap is generated.
 * The roadmap may be viewed directly in any browser (it is HTML5) or optionally printed via the browser for hard-copy output.
 
+## 2021 Additions to the script set
+
+The __roadmap.php__ script now (by default) displays the information for use by the worship participants (Pastor, Lay Reader, Song Leader, etc.) without the clutter of the A/V cues.  Using __roadmap.php?avtech__ now produces a roadmap for use by the A/V Tech with the audio and video cues highlighted and the other participant text included so the techs can follow along the service order.  A __roadmap.php?summary__ is now available to show just the slide names/order.
+
+The __roadmap.php?list__ now includes links for the basic, A/V tech and summary roadmaps available.
+
+In 2021, we began using Audio and Video files embedded in the slides, so the __roadmap.php__ script was modified to collect all the JSON files from a .prs backup and save to a corresponding ./proclaimarchive/YYYY-MM-DD_HH-alljson.txt file so the script could extract details about each Audio or Video file as needed.
+We also began to explore using Lighting Signals (MIDI) commands to control our OBS software scene selections.  Unfortunately, Proclaim doesn't store details about Lighting Signals in the __BackupPresentation.json or other JSON files, so to correlate/display 'what' the signal does, a __signals-list.txt__ can be used to associate the SceneSignal, SceneId with some text to display.
+
+Given the larger .prs files when embedding Audio or Video files in the presentation, the make-roadmap process would sometimes fail due to either max POST size or max time.  To fix this, we upload the large presentation to ./temp-proclaim/backup.prs using FTP or SCP copy, then run __process-roadmap.php__ script to add it to the set for __roadmap.php__ to display.
+
 ## Caveat
 
 The author of these scripts is not affiliated with Faithlife Proclaim software developers in any way other than as a user of the Proclaim PC/Mac software.
@@ -46,7 +57,9 @@ __./psongs/__ - support files for __DataTables__ queries
 __./lyricsxml/__ - storage for the OpenLyrics .XML
 files
 
-__./proclaimarchive/__ - storage for the Proclaim Backup Presentation (.prs and .json) files submitted for roadmap generation.  The files use `YYYY-MM-DD_HH.{prs|json}` as the filenames with _YYYY-MM-DD\_HH_ the date and hour of the service.  The __roadmap.php__ script only uses the _.json_ file for creating the roadmap.
+__./proclaimarchive/__ - storage for the Proclaim Backup Presentation (.prs and .json) files submitted for roadmap generation.  The files use `YYYY-MM-DD_HH.{prs|json}` as the filenames with _YYYY-MM-DD\_HH_ the date and hour of the service.  A _YYYY-MM-DD\_HH-alljson.txt_ file will contain the contents of all the other .json files in the .prs. The __roadmap.php__ script only uses the _.json_ file and the .txt file for creating the roadmap.
+
+__./temp-proclaim/__ - storage for a uploaded __backup.prs__ file (uploaded by FTP or SCP).  It would then be processed by running __process-roadmap.php__.
 
 * sample website structure scripts
   * __settings-common.php__ - overall settings for the scripts
@@ -127,7 +140,7 @@ The roadmap is a pure HTML5 page that may be easily printed from the browser, or
 I've included a PDF (and Word™) document that was used for training at our church.  Feel free to modify/expand it for your church's use.
 
 * Proclaim Utility Guide
-  * [Word format](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Proclaim-Utility-Guide.docx) 
+  * [Word format](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Proclaim-Utility-Guide.docx)
   * [PDF format](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Proclaim-Utility-Guide.pdf)
 * Sample Roadmap
   * [HTML format](https://github.com/ktrue/proclaim-utility/raw/master/www/docs/Roadmap-sample.html)

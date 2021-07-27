@@ -1,0 +1,8 @@
+<?php
+$SignalsList = array (
+  '42cb04d0-0bb4-46b5-9392-a1722e234f3f' => 'Choir+Slides',
+  '0466979b-0542-44bb-b605-a7122b4b852c' => 'Lectern Zoom+Slides',
+  'c1514aab-786e-4dc4-a5a2-ef0c1beafd61' => 'Lectern Wide+Slides', 
+  '88661193-b6ef-4b58-9ffa-32570cddb20d' => 'Slides',
+  '192ef931-90c3-4fd4-99e3-2fa725dca27f' => 'Standby',
+);

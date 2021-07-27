@@ -1,4 +1,6 @@
 <?php 
+ini_set('post_max_size','150M');
+ini_set('upload_max_filesize','149M');
 
 if(!isset($_POST['download'])) {include("top-parts.php");} 
 ?>
