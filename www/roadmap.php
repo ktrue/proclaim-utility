@@ -38,10 +38,11 @@
 # Version 1.93 - 23-Jul-2021 - added Updated: at top of display, vsignal index
 # Version 1.94 - 24-Jul-2021 - additional info on Lighting Signals
 # Version 1.95 - 26-Jul-2021 - added display of AutoAdvance slides in titles with vsignal format
+# Version 1.96 - 30-Jul-2021 - changes for Video switching support via MIDI Lighting Scenes
 #
 include_once("settings-common.php");
 
-$Version = 'roadmap.php - Version 1.95 - 26-Jul-2021';
+$Version = 'roadmap.php - Version 1.96 - 30-Jul-2021';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -241,6 +242,14 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		$play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
 		$t = get_video_info($item['media'],$allJSON);
 		$extraText .= " <small><em>[$play of Video$t]</em></small><br/>";
+		if(isset($item['content']['VideoEndOptions'])) {
+					$endOpt = $item['content']['VideoEndOptions'];
+		} else {
+			$endOpt = '';
+		}
+		if($endOpt == 'AutoAdvance') {
+			$title .= " <span class=\"vsignal\"><em>[Note: will auto advance to next slide at end of video]</em></span>";
+		}
 	}
 	if($kind == 'StageDirectionCue') {
 			$rawXML = '<xmlstuff>'.(string)$item['content']['StageDirectionDetails'].'</xmlstuff>';
@@ -452,7 +461,7 @@ function decode_signal($item,$slideNumber) {
 		$key = $signal['parameters']['SceneId'];
 		$title = $item['title'];
 		if(isset($SignalsList[$key])) {
-			$out .= "Video: select <strong>".$SignalsList[$key]."</strong> scene as program ";
+			$out .= "Video cue: selecting <strong>".$SignalsList[$key]."</strong> scene as program for OBS ";
 		} else {
 		  $out .= 'SceneId: '.$signal['parameters']['SceneId'].' ';
 		}
