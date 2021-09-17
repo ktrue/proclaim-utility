@@ -39,10 +39,12 @@
 # Version 1.94 - 24-Jul-2021 - additional info on Lighting Signals
 # Version 1.95 - 26-Jul-2021 - added display of AutoAdvance slides in titles with vsignal format
 # Version 1.96 - 30-Jul-2021 - changes for Video switching support via MIDI Lighting Scenes
+# Version 1.97 - 03-Aug-2021 - avtech display tweaks for readability
+# Version 1.98 - 17-Sep-2021 - hymn# override of CCLI data on display
 #
 include_once("settings-common.php");
 
-$Version = 'roadmap.php - Version 1.96 - 30-Jul-2021';
+$Version = 'roadmap.php - Version 1.98 - 17-Sep-2021';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -342,14 +344,14 @@ function decode_lyrics($item) {
 	//$rawLyricsXML = preg_replace('!<span[^>]*>!Uis','',$rawLyricsXML);
 	//$rawLyricsXML = preg_replace('!</span>!Uis','',$rawLyricsXML);
 	$copyright = isset($item['content']['_textfield:Copyright'])?$item['content']['_textfield:Copyright']:'';
-  if(!empty($item['content']['_textfield:Song Number'])) {
+	$hymn =      !empty($item['content']['_textfield:Hymn Number'])?$item['content']['_textfield:Hymn Number']:'';
+  if(strlen(trim($hymn)) < 1 and !empty($item['content']['_textfield:Song Number'])) {
 		$copyright .= ' CCLI Song #'.$item['content']['_textfield:Song Number'];
 	}
-	if(!empty($item['content']['_textfield:License Number']) and 
+	if(strlen(trim($hymn)) < 1 and !empty($item['content']['_textfield:License Number']) and 
 	   !empty($item['content']['_textfield:Song Number']) ) {
 		$copyright .= ' used under CCLI license #'.$item['content']['_textfield:License Number'];
 	}
-	$hymn =      !empty($item['content']['_textfield:Hymn Number'])?$item['content']['_textfield:Hymn Number']:'';
 	$useVerseOrder = isset($item['content']['CustomOrderSlides'])?$item['content']['CustomOrderSlides']:'';
 	$verseOrder = isset($item['content']['CustomOrderSequence'])?$item['content']['CustomOrderSequence']:'';
 	$lyricsText = '';
@@ -461,9 +463,9 @@ function decode_signal($item,$slideNumber) {
 		$key = $signal['parameters']['SceneId'];
 		$title = $item['title'];
 		if(isset($SignalsList[$key])) {
-			$out .= "Video cue: selecting <strong>".$SignalsList[$key]."</strong> scene as program for OBS ";
+			$out .= "[automatic video program scene change to <strong>".$SignalsList[$key]."</strong>] ";
 		} else {
-		  $out .= 'SceneId: '.$signal['parameters']['SceneId'].' ';
+		  $out .= '[Signal: SceneId: '.$signal['parameters']['SceneId'].'] ';
 		}
 		#$out .= $signal['parameters']['FirePerSlide']=="true"?'Fire-Per-Slide':'Fire-Once';
 		$out .= "<!-- (validationState=".$signal['validationState']." ;";
@@ -990,7 +992,7 @@ h1, h2, h3, h4, h5, h6, p, div, ol, ul, dl {
 }
 
 ol, ul, dl {
-  padding-left: 40px;
+  padding-left: 20px;
   padding-right: 10px;
 }
 li {
@@ -1056,10 +1058,10 @@ a:hover, a:active, a:focus {
 .section {
   text-align: left;
   color: #000;
-  text-decoration: none;
+  text-decoration: underline overline; 
   font-weight: bold;
-  margin-left: 2em;
-    font-size: 12pt;
+  margin-left: 0em;
+  font-size: 16pt;
 
 }
 .stage {
@@ -1075,6 +1077,7 @@ a:hover, a:active, a:focus {
 	color: green;
 	font-weight: normal;
 	font-style: italic;
+	font-size: 12pt;
 }
 
 /* ~~ The footer ~~ */
@@ -1272,7 +1275,7 @@ a:hover, a:active, a:focus {
 .section {
   text-align: left;
   color: #000;
-  text-decoration: none;
+  text-decoration: underline; 
   font-weight: bold;
 }
 .stage {
