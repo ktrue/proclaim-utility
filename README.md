@@ -75,6 +75,8 @@ __./temp-proclaim/__ - storage for a uploaded __backup.prs__ file (uploaded by F
   * __make-roadmap.php__ - script to upload Proclaim .prs file and display (via __roadmap.php__) the roadmap.
   * __process-roadmap.php__ - script to read ./temp-proclaim/backup.prs file uploaded by FTP/SCP and create the needed .json and .txt files for __roadmap.php__ to use.
   * __roadmap.php__ - main script to parse selected BackupPresentation.json file and generate the HTML5 roadmap display
+  * __signals-list.txt__ - user-constructed associative array to convert Proclaim SceneIDs to human-readable text for printing on a roadmap
+
 * files automatically maintained:
   * __last-update.txt__ - modified with timestamp of last upload done through __make-roadmap.php__ script.
   * __proclaim-songlist.csv__ - automatically updated by __songs-usedcsv.php__ when a new lyric is downloaded by the __make-openlp.php__ page.
@@ -142,18 +144,23 @@ Unfortunately, Proclaim does not store the Lighting Signals in a format that can
 
 Example:  the view-source shows:
 ```
-'1d2cfdf9-6765-4b25-b898-bffeb8ba727e' =>
+'42cb04d0-0bb4-46b5-9392-a1722e234f3f' =>
 array (
-  0 => '41: 13 Pastor Mic UNMUTE',
-  1 => '49: Combination signals',
-  2 => '50: Communion',
+  0 => '13: Prelude',
+  1 => '21: May You Run and Not Be Weary',
+  2 => '25: Enter, Rejoice, and Come In',
+  3 => '27: We Are Your People',
+  4 => '36: Choir: Anthem',
+  5 => '45: The Power of Your Love',
+  6 => '51: As We Gather at Your Table',
+  7 => '62: Testify to Love',
 ),
 ```
-which indicates that SceneId '1d2cfdf9-6765-4b25-b898-bffeb8ba727e' was seen on slides 41, 49, and 50 with the corresponding slide titles shown.
+which indicates that SceneId '42cb04d0-0bb4-46b5-9392-a1722e234f3f' was seen on slides 13, 21, 25 etc. with the corresponding slide titles shown.
 
-That unmute for the Pastor Mic should appear in the _signals-list.txt file array as
+Those are all for the 'Piano-Choir+Slides' scene in OBS so it should appear in the _signals-list.txt_ file array as
 ```
-'1d2cfdf9-6765-4b25-b898-bffeb8ba727e' => 'signal: sound mixer <strong>UNMUTE 13 Pastor Mic</strong>',
+'42cb04d0-0bb4-46b5-9392-a1722e234f3f' => 'signal: OBS scene change to <strong>Piano-Choir+Slides</strong>',
 ```
 
 Fortunately, you only have to do this correspondence table once as Proclaim stores it (likely in the cloud) so all the Proclaim users in your presentation group have the same set of Lighting signals available.
