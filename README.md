@@ -136,6 +136,28 @@ The text formatting of __bold__, _italic_, ___bold-italic___, and small-caps is 
 
 The roadmap is a pure HTML5 page that may be easily printed from the browser, or simply viewed online.
 
+## Display of Signals in avtech roadmaps
+
+Unfortunately, Proclaim does not store the Lighting Signals in a format that can be accessed by a program.  The _signals-list.txt_ file provides a lookup from the SceneId to human-readible text to display.  Our sample one is included -- you'll need to construct your own version (as SceneIds are unique per Faithlife group).  If you embed your Lighting Signals in slides, then upload and view-source of the _roadmap.php?avtech_, near the bottom of the page in HTML comments will appear the listing of all Lighting Signals encountered in the slides.  Using that, and the current _signals-list.txt_ as a model, you can construct your custom _signals-list.txt_ for your use.
+
+Example:  the view-source shows:
+```
+'1d2cfdf9-6765-4b25-b898-bffeb8ba727e' =>
+array (
+  0 => '41: 13 Pastor Mic UNMUTE',
+  1 => '49: Combination signals',
+  2 => '50: Communion',
+),
+```
+which indicates that SceneId '1d2cfdf9-6765-4b25-b898-bffeb8ba727e' was seen on slides 41, 49, and 50 with the corresponding slide titles shown.
+
+That unmute for the Pastor Mic should appear in the _signals-list.txt file array as
+```
+'1d2cfdf9-6765-4b25-b898-bffeb8ba727e' => 'signal: sound mixer <strong>UNMUTE 13 Pastor Mic</strong>',
+```
+
+Fortunately, you only have to do this correspondence table once as Proclaim stores it (likely in the cloud) so all the Proclaim users in your presentation group have the same set of Lighting signals available.
+
 ## Additional documentation
 
 I've included a PDF (and Word™) document that was used for training at our church.  Feel free to modify/expand it for your church's use.
