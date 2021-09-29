@@ -41,10 +41,11 @@
 # Version 1.96 - 30-Jul-2021 - changes for Video switching support via MIDI Lighting Scenes
 # Version 1.97 - 03-Aug-2021 - avtech display tweaks for readability
 # Version 1.98 - 17-Sep-2021 - hymn# override of CCLI data on display
+# Version 1.99 - 22-Sep-2021 - change display of signals.txt entries
 #
 include_once("settings-common.php");
 
-$Version = 'roadmap.php - Version 1.98 - 17-Sep-2021';
+$Version = 'roadmap.php - Version 1.99 - 22-Sep-2021';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -463,7 +464,7 @@ function decode_signal($item,$slideNumber) {
 		$key = $signal['parameters']['SceneId'];
 		$title = $item['title'];
 		if(isset($SignalsList[$key])) {
-			$out .= "[automatic video program scene change to <strong>".$SignalsList[$key]."</strong>] ";
+			$out .= "[".$SignalsList[$key]."]<br/> ";
 		} else {
 		  $out .= '[Signal: SceneId: '.$signal['parameters']['SceneId'].'] ';
 		}
