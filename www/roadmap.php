@@ -42,10 +42,11 @@
 # Version 1.97 - 03-Aug-2021 - avtech display tweaks for readability
 # Version 1.98 - 17-Sep-2021 - hymn# override of CCLI data on display
 # Version 1.99 - 22-Sep-2021 - change display of signals.txt entries
+# Version 1.100 - 08-Oct-2021 - improve HTML comments on Lighting Signals found
 #
 include_once("settings-common.php");
 
-$Version = 'roadmap.php - Version 1.99 - 22-Sep-2021';
+$Version = 'roadmap.php - Version 1.100 - 08-Oct-2021';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -305,7 +306,23 @@ $footerText .= "from Proclaim slides '<strong>".$JSON['title']."</strong>' for t
                $JSON['startTime']."</strong> worship service.<br/>";
 $footerText .= "Slide set was last modified on <strong>".date('l, F d, Y g:i:sa',strtotime($latestModifiedDate)).
                "</strong></small></small>";
-print "<!-- Lighting Signals Found\n".var_export($Signals,true)." -->\n";
+# print "<!-- Lighting Signals Found\n".var_export($Signals,true)." -->\n";
+print "<!-- Lighting Signals found\n\n";
+
+foreach ($Signals as $key => $list) {
+	print "key='".$key."'";
+	if(isset($SignalsList[$key])) { 
+	  print "\n  (as '".$SignalsList[$key]."')\n";
+	} else {
+		print "\n  (key is not in signals-list.txt)\n";
+	}
+	print "  found on slide: title\n";
+	foreach ($list as $i => $val) {
+		print "    $val\n";
+	}
+	print "\n";
+}
+print " -->\n";
 
 if(count($SignalsList) > 0) {
 	print "<!-- Lighting Signals known via ./SignalsList.txt\n".var_export($SignalsList,true)." -->\n";
