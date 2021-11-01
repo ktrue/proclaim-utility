@@ -43,10 +43,11 @@
 # Version 1.98 - 17-Sep-2021 - hymn# override of CCLI data on display
 # Version 1.99 - 22-Sep-2021 - change display of signals.txt entries
 # Version 1.100 - 08-Oct-2021 - improve HTML comments on Lighting Signals found
+# Version 1.101 - 01-Nov-2021 - improve listing for local Video media display
 #
 include_once("settings-common.php");
 
-$Version = 'roadmap.php - Version 1.100 - 08-Oct-2021';
+$Version = 'roadmap.php - Version 1.101 - 01-Nov-2021';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -245,6 +246,9 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 	if($kind == 'Video') {
 		$play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
 		$t = get_video_info($item['media'],$allJSON);
+		if($t == '') {
+			$t = get_local_video_info($item['content'],$allJSON);
+		}
 		$extraText .= " <small><em>[$play of Video$t]</em></small><br/>";
 		if(isset($item['content']['VideoEndOptions'])) {
 					$endOpt = $item['content']['VideoEndOptions'];
@@ -966,11 +970,48 @@ function get_audio_info($list,$allJSON) {
 	return($t);
 }
 
+function get_local_video_info($content,$allJSON) {
+	$t = '';
+	foreach ($content as $key => $data) {
+		if(strpos($key,'localfile') !==false) {
+			print "<!-- get_local_video_info key='$key'\n".var_export($data,true)." -->\n";
+			list($junk,$num,$name) = explode(':',$key);
+			$tJ = json_decode($data,true);
+/*
+{
+  "name": "B51.2_ The Twenty-Fifth Sunday after Pentecost, Year B (2018)",
+  "path": "d7cf1f25-ca68-4a99-b775-9cb167128a7f.mp4",
+  "videoPreviewImagePath": "5476f2fc-2e5f-4adb-820d-6c6043a4304e.png",
+  "loopVideo": false,
+  "videoDuration": "00:11:48",
+  "isEmptyForegroundImagePlaceholder": false
+}
+*/
+			list($path,$extension) = explode('.',$tJ['path']);
+			
+			if(isset($allJSON[$path])) {
+				print "<!-- allJSON path='$path'\n".var_export($allJSON[$path],true)." -->\n";
+			} else {
+				print "<!-- allJSON path='$path' not found -->\n";
+			}
+			
+			$t = " \"<strong>".$tJ['name'].'.'.$extension."\"</strong> (local) ".$tJ['videoDuration'];
+			if($tJ['loopVideo']) {
+				$t .= " loop at end";
+			}
+		}
+	}
+	return($t);
+}
+
 function get_video_info($list,$allJSON) {
 	$t = '';
+	$foundKey = false;
 	foreach ($list as $i => $key) {
 		if(isset($allJSON[$key])) {
+			$foundKey = true;
 			$tJ = json_decode($allJSON[$key],true);
+			print "<!-- get_video_info key='$key'\n".var_export($tJ,true)." -->\n";
 			if(isset($tJ['about']['name'])) {
 				$t .= " '".$tJ['about']['name'];
 			}
@@ -985,7 +1026,10 @@ function get_video_info($list,$allJSON) {
 		}
 		
 	}
-//  	
+//  
+  if(!$foundKey) {
+		print "<!-- get_video_info .. allJSON ".var_export($list,true)." not found -->\n";
+	}
 	return($t);
 }
 
