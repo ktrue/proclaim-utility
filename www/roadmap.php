@@ -44,10 +44,11 @@
 # Version 1.99 - 22-Sep-2021 - change display of signals.txt entries
 # Version 1.100 - 08-Oct-2021 - improve HTML comments on Lighting Signals found
 # Version 1.101 - 01-Nov-2021 - improve listing for local Video media display
+# Version 1.102 - 02-Nov-2021 - improve ?summary display for Songs: w/verses and copyright info display
 #
 include_once("settings-common.php");
 
-$Version = 'roadmap.php - Version 1.101 - 01-Nov-2021';
+$Version = 'roadmap.php - Version 1.102 - 02-Nov-2021';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -206,6 +207,9 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		   $title = "Song: \"<em>$title</em>\" ($hymn)";
 		 } else {
 		   $title = "Song: \"<em>$title</em>\"";
+		 }
+		 if(isset($_GET['summary'])) {
+			 $title .= "<br/>$other";
 		 }
 		 if(isset($item['content']['Audio'])) {
 			 $tJ = json_decode($item['content']['Audio'],true);
@@ -377,9 +381,16 @@ function decode_lyrics($item) {
 	$useVerseOrder = isset($item['content']['CustomOrderSlides'])?$item['content']['CustomOrderSlides']:'';
 	$verseOrder = isset($item['content']['CustomOrderSequence'])?$item['content']['CustomOrderSequence']:'';
 	$lyricsText = '';
-	$other = '';
+	$other = '<span style="font-size: 12px;color: green;display: block; padding-left: 2em;">';
+	if($verseOrder == '') {
+		$other .= '[all verses]'; 
+	} else { 
+	  $other .= '['.$verseOrder.']'; 
+	}
+	$other .= "<br/>$copyright</span>";
+	
   if(strlen($rawLyricsXML) > 10) {
-    list($lyricsText,$other) = xml_to_html($rawLyricsXML,false);
+    list($lyricsText,$other2) = xml_to_html($rawLyricsXML,false);
 	}
 	
 	$formattedSong = format_song($lyricsText,$verseOrder,$copyright,$hymn);
