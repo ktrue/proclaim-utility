@@ -45,10 +45,10 @@
 # Version 1.100 - 08-Oct-2021 - improve HTML comments on Lighting Signals found
 # Version 1.101 - 01-Nov-2021 - improve listing for local Video media display
 # Version 1.102 - 02-Nov-2021 - improve ?summary display for Songs: w/verses and copyright info display
-#
+# Version 1.103 - 14-Dec-2021 - some minor HTML fixes for better validation
 include_once("settings-common.php");
 
-$Version = 'roadmap.php - Version 1.102 - 02-Nov-2021';
+$Version = 'roadmap.php - Version 1.103 - 14-Dec-2021';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -273,6 +273,7 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 	}
 	if(strlen($notes)> 1) { // AV cues before heading
 		$notes = str_replace("\n","<br/>\n",$notes);
+		$notes = cleanup_html($notes);
 	  print "<p class=\"avcue\">$notes</p>\n";
 	}
   if(isset($item['signals']) and count($item['signals']) > 0) {
@@ -291,20 +292,20 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 	}
 	
 	if($kind !== 'StageDirectionCue') {
-		print "<p class=\"section\"><strong>$title</strong>$autoAdvanceText</p>\n";  // slide name is underlined heading
+		print "<p class=\"section\"><strong>$title</strong>$autoAdvanceText\n<!-- end class=section -->\n</p>\n";  // slide name is underlined heading
 		if(strlen($extraText) > 1) { // print all following stuff in slide if need be
 		  print "<!-- extraText='$extraText' -->\n";
 			$extraText = cleanup_html(trim($extraText));
-			print "<p class=\"service\"><!-- extraText -->$extraText</p>\n";
+			print "<p class=\"service\"><!-- extraText -->$extraText\n<!-- end class=service -->\n</p>\n";
 		}
 	} else { // special handling for stage direction
 		if(strlen($extraText) > 0) {
-		  print "<p class=\"stage\">($extraText)</p>\n";
+		  print "<p class=\"stage\">($extraText)\n<!-- end class=stage -->\n</p>\n";
 		}
 		if(strlen($other) > 0) {
 			$other = cleanup_html($other);
 			$other = str_replace("\n","<br/>\n",$other);
-			print "<p class=\"service\"><!-- other -->$other</p>\n";
+			print "<p class=\"service\"><!-- other -->$other\n<!-- end class=service -->\n</p>\n";
 		}
 	}
 	print "\n";
@@ -859,9 +860,11 @@ function cleanup_html($input) {
 	$t = str_replace('ul><br/>','ul>',$t);
 	$t = str_replace('<p></p>','',$t);
 	$t = str_replace('<strong></strong>','',$t);
+	$t = str_replace("\n</strong>\n",'',$t);
 	$t = str_replace('<em></em>','',$t);
 	$t = preg_replace('!^<br/>\s+!is','',$t);
 	$t = preg_replace('!<br/>\s+$!is','',$t);
+	if($t == '<strong>') {$t = '';}
 	return($t);
 	
 }
