@@ -46,9 +46,10 @@
 # Version 1.101 - 01-Nov-2021 - improve listing for local Video media display
 # Version 1.102 - 02-Nov-2021 - improve ?summary display for Songs: w/verses and copyright info display
 # Version 1.103 - 14-Dec-2021 - some minor HTML fixes for better validation
+# Version 1.104 - 22-Dec-2021 - style copyright info as italic
 include_once("settings-common.php");
 
-$Version = 'roadmap.php - Version 1.103 - 14-Dec-2021';
+$Version = 'roadmap.php - Version 1.104 - 22-Dec-2021';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -388,7 +389,7 @@ function decode_lyrics($item) {
 	} else { 
 	  $other .= '['.$verseOrder.']'; 
 	}
-	$other .= "<br/>$copyright</span>";
+	$other .= "<br/><span style=\"font-style: italic;\">$copyright</span></span>";
 	
   if(strlen($rawLyricsXML) > 10) {
     list($lyricsText,$other2) = xml_to_html($rawLyricsXML,false);
@@ -636,7 +637,7 @@ function format_song($lyricsText,$verseOrder,$copyright,$hymn) {
 	}
 
 //	$out .= print_r($Verses,true)."\n";
-	$out .= "<span style=\"font-size: 10pt;\">$copyright</span>\n";
+	$out .= "<span style=\"font-size: 11pt;font-style:italic;\">$copyright</span>\n";
 	
 //	$out .= "--------\n";
 	
