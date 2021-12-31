@@ -47,9 +47,11 @@
 # Version 1.102 - 02-Nov-2021 - improve ?summary display for Songs: w/verses and copyright info display
 # Version 1.103 - 14-Dec-2021 - some minor HTML fixes for better validation
 # Version 1.104 - 22-Dec-2021 - style copyright info as italic
+# Version 1.105 - 31-Dec-2021 - add details to Summary for Announcement with Prelude/Postlude/Anthem 
+
 include_once("settings-common.php");
 
-$Version = 'roadmap.php - Version 1.104 - 22-Dec-2021';
+$Version = 'roadmap.php - Version 1.105 - 31-Dec-2021';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -60,6 +62,11 @@ $archiveFiles = glob($archiveDir.'*.json');
 $nextService = date('Y-m-d',strtotime('this sunday')).'_10';
 $availableFiles = array();
 $extraText = '';
+if(isset($SITE['summaryAnnounce'])) {
+	$summaryAnnounce = $SITE['summaryAnnounce'];
+} else {
+	$summaryAnnounce = array('prelude','postlude','anthem');
+}
 if ( file_exists($archiveDir.'filelist.txt') ) {
   $t = file_get_contents($archiveDir.'filelist.txt');
   $availableFiles = unserialize( $t );
@@ -237,6 +244,15 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 	if($kind == "Announcement") {
 	   list($contentText,$other) = decode_announcement($item);
 		 $extraText = str_replace("\n","<br/>\n",$contentText);
+		 if(isset($_REQUEST['summary']) and is_array($summaryAnnounce) and !empty($summaryAnnounce[0]) ) {
+			 foreach ($summaryAnnounce as $i => $tstr) {
+				 if(stripos($title,$tstr) !== false) {
+					 $title .= " <em>".str_replace("\n",', ',$contentText)." </em>";
+					 break;
+				 }
+			 }
+			 
+		 }
 	}
 	if($kind == "WebPage") {
 		$play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';

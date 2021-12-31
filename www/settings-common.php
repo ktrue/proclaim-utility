@@ -18,6 +18,8 @@ $SITE['churchKeywords'] = 'Your Church, United Church of Christ';
 $SITE['oneLicenceNumber'] = '999999'; // church's OneLicense.net number 
 $SITE['CCLILicenseNumber'] = '1111111'; // church's CCLI number for SongSelect
 $SITE['timezone'] = 'America/Los_Angeles';
+# list of Announcement slides titles to show contents on summary view
+$SITE['summaryAnnounce'] = array('prelude','postlude','anthem');
 # ------------------------------------------------
 # settings for relative location of Proclaim backups (from make-roadmap)
 $SITE['$JSONfilesDir'] = './proclaimarchive/';
