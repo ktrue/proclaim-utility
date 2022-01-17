@@ -47,11 +47,12 @@
 # Version 1.102 - 02-Nov-2021 - improve ?summary display for Songs: w/verses and copyright info display
 # Version 1.103 - 14-Dec-2021 - some minor HTML fixes for better validation
 # Version 1.104 - 22-Dec-2021 - style copyright info as italic
-# Version 1.105 - 31-Dec-2021 - add details to Summary for Announcement with Prelude/Postlude/Anthem 
+# Version 1.105 - 31-Dec-2021 - add details to Summary for Announcement with Prelude/Postlude/Anthem
+# Version 1.106 - 16-Jan-2022 - add detail of audio file to Summary for Song file 
 
 include_once("settings-common.php");
 
-$Version = 'roadmap.php - Version 1.105 - 31-Dec-2021';
+$Version = 'roadmap.php - Version 1.106 - 16-Jan-2022';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -224,7 +225,13 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 			 if(isset($tJ['audioTracks']) and count($tJ['audioTracks']) > 0) {
 				$t = get_audio_info($tJ['audioTracks'],$allJSON);
 		    $play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
-			  $extraText = " <small><em>[$play Audio Track $t]</em></small><br/>" . $extraText;
+				if(isset($_GET['avtech'])) {
+			    $extraText = " <small><em>[$play Audio Track $t]</em></small><br/>" . $extraText;
+				}
+				if(isset($_GET['summary'])) {
+					$title .= '<span style="font-size: 12px;color: green;display: block; padding-left: 2em;">';
+					$title .= "<small><em>[$play Audio Track $t]</em></small></span>";
+				}
 			 }
 		 }
 			 
