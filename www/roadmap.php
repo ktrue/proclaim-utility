@@ -49,10 +49,11 @@
 # Version 1.104 - 22-Dec-2021 - style copyright info as italic
 # Version 1.105 - 31-Dec-2021 - add details to Summary for Announcement with Prelude/Postlude/Anthem
 # Version 1.106 - 16-Jan-2022 - add detail of audio file to Summary for Song file 
+# Version 1.107 - 16-Mar-2022 - add verse# display in ?avtech listing
 
 include_once("settings-common.php");
 
-$Version = 'roadmap.php - Version 1.106 - 16-Jan-2022';
+$Version = 'roadmap.php - Version 1.107 - 16-Mar-2022';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -219,6 +220,9 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		 }
 		 if(isset($_GET['summary'])) {
 			 $title .= "<br/>$other";
+		 }
+		 if(isset($_GET['avtech'])) {
+			 $title .= "<br/><p class=\"vsignal\"$other</p>";
 		 }
 		 if(isset($item['content']['Audio'])) {
 			 $tJ = json_decode($item['content']['Audio'],true);
@@ -412,7 +416,11 @@ function decode_lyrics($item) {
 	} else { 
 	  $other .= '['.$verseOrder.']'; 
 	}
-	$other .= "<br/><span style=\"font-style: italic;\">$copyright</span></span>";
+	if(!isset($_GET['avtech'])) {
+	  $other .= "<br/><span style=\"font-style: italic;\">$copyright</span></span>";
+	} else {
+		$other .= "</span>";
+	}
 	
   if(strlen($rawLyricsXML) > 10) {
     list($lyricsText,$other2) = xml_to_html($rawLyricsXML,false);
