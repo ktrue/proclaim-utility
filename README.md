@@ -140,6 +140,19 @@ The text formatting of __bold__, _italic_, ___bold-italic___, and small-caps is 
 
 The roadmap is a pure HTML5 page that may be easily printed from the browser, or simply viewed online.
 
+Version 1.200 of _roadmap.php_ now supports highlighted text for participants.  By default, 'Pastor:','Lay Reader:','Song Leader:', and 'Communion Assistant:' can be used as the start of a Slide title to highlight the text for that person.  In a Notes part of a slide, the same string can be used to assign that text to that participant.   The highlight function is invoked by a _hilite=CCCC_ argument on the URL.  Use ?list to get an index of the currently available roadmaps and links to highlighting the various ones.  The names may be modified inside _roadmap.php_ code
+```
+global $lookfor;
+$lookfor = array( # service participants in open text
+	'lay reader:'  => 'L', # Note: Scripture will generally be highlited for Lay Reader/Lay Leader
+	'lay leader:'  => 'L',
+	'song leader:' => 'S', # Note: Songs will always be highlited for Song Leader
+	'pastor:'		  => 'P',
+	'communion assistant:' => 'C',
+);
+```
+The default is to NOT highlight any of the text.
+
 ## Display of Signals in avtech roadmaps
 
 Unfortunately, Proclaim does not store the Lighting Signals in a format that can be accessed by a program.  The _signals-list.txt_ file provides a lookup from the SceneId to human-readible text to display.  Our sample one is included -- you'll need to construct your own version (as SceneIds are unique per Faithlife group).  If you embed your Lighting Signals in slides, then upload and view-source of the _roadmap.php?avtech_, near the bottom of the page in HTML comments will appear the listing of all Lighting Signals encountered in the slides.  Using that, and the current _signals-list.txt_ as a model, you can construct your custom _signals-list.txt_ for your use.

@@ -50,10 +50,21 @@
 # Version 1.105 - 31-Dec-2021 - add details to Summary for Announcement with Prelude/Postlude/Anthem
 # Version 1.106 - 16-Jan-2022 - add detail of audio file to Summary for Song file 
 # Version 1.107 - 16-Mar-2022 - add verse# display in ?avtech listing
+# Version 1.200 - 09-Apr-2022 - add higlight feature for Pastor, Lay Reader, Song Leader, Comm. Asst. 
 
 include_once("settings-common.php");
 
-$Version = 'roadmap.php - Version 1.107 - 16-Mar-2022';
+global $lookfor;
+$lookfor = array( # service participants in open text
+	'lay reader:'  => 'L', # Note: Scripture will generally be highlited for Lay Reader/Lay Leader
+	'lay leader:'  => 'L',
+	'song leader:' => 'S', # Note: Songs will always be highlited for Song Leader
+	'pastor:'		  => 'P',
+	'communion assistant:' => 'C',
+);
+
+
+$Version = 'roadmap.php - Version 1.200 - 09-Apr-2022';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -109,7 +120,11 @@ if(isset($_GET['list']) and !isset($_FILES['upload']['tmp_name'])) {
 		$link = str_replace($archiveDir,'',$file);
 		$link = str_replace('.json','',$link);
 		
-		print "<li><a href=\"?show=$link\">$name Roadmap</a> | <a href=\"?show=$link&amp;avtech\">with A/V cues</a> | <a href=\"?show=$link&amp;summary\">Summary/Outline</a></li>\n";
+		print "<li><a href=\"?show=$link\">$name Roadmap</a> | <small> <a href=\"?show=$link&amp;avtech\">with A/V cues</a> | <a href=\"?show=$link&amp;summary\">Summary/Outline</a> | Highlite: ( ";
+		print "<a href=\"?show=$link&amp;hilite=past\">Pastor</a> | ";
+		print "<a href=\"?show=$link&amp;hilite=lay\">Lay Reader</a> | ";
+		print "<a href=\"?show=$link&amp;hilite=song\">Song Leader</a> | ";
+		print "<a href=\"?show=$link&amp;hilite=ca\">Comm. Asst.</a> )</small></li>\n";
 	}
 	print "</ul>\n";
 	do_print_footer("<small><small>$Version</small></small>");
@@ -175,6 +190,16 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		$latestModifiedDate = $lmod;
 	}
 }
+$highlite= '';
+global $highlite;
+
+if (isset($_GET['hilite']) ) {
+	$t = strtolower($_GET['hilite']);
+	$highlite = (strpos($t,'lay')  !== false)?'L':$highlite;
+	$highlite = (strpos($t,'song') !== false)?'S':$highlite;
+	$highlite = (strpos($t,'pas')  !== false)?'P':$highlite;
+	$highlite = (strpos($t,'ca')   !== false)?'C':$highlite;
+}
 
 $title = "Worship Roadmap - $serviceDate";
 if(isset($_GET['avtech'])) {
@@ -182,6 +207,18 @@ if(isset($_GET['avtech'])) {
 }
 if(isset($_GET['summary'])) {
 	$title = "Summary " . $title;
+}
+if($highlite == 'L') {
+	$title .= "<br><small>Highlighted for <mark>Lay Reader</mark></small>";
+}
+if($highlite == 'S') {
+	$title .= "<br><small>Highlighted for <mark>Song Leader</mark></small>";
+}
+if($highlite == 'P') {
+	$title .= "<br><small>Highlighted for <mark>Pastor</mark></small>";
+}
+if($highlite == 'C') {
+	$title .= "<br><small>Highlighted for <mark>Communion Assistant</mark></small>";
 }
 
 do_print_header($title);
@@ -206,6 +243,7 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 	if($kind == "SongLyrics") {
 		 list($lyrics,$other) = decode_lyrics($item);
 		 if(strlen($roadmapText) > 0) {
+       $roadmapText = do_highlite($roadmapText,$title);
 			 $roadmapText .= "<br/><br/>\n";
 		   $extraText = $roadmapText.$lyrics;
 			 $roadmapText = '';
@@ -242,7 +280,11 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 	}
 	if($kind == "BiblePassage") {
 		 list($bible,$other) = decode_bible_passage($item);
-		 $extraText = $bible;
+		 if(preg_match('!^Scripture!i',$title) ) {
+			 $extraText = do_highlite($bible,"Lay Reader: ".$title);
+		 } else {
+			 $extraText = do_highlite($bible,$title);
+		 }
 		 $bibleVersion = $item['content']['BibleVersion'];
 	   $verses = $item['content']['_textfield:BibleReference'];
      $title .= ": $verses ($bibleVersion)";
@@ -250,10 +292,12 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 	
 	if($kind == "Content") {
 		 list($contentText,$other) = decode_content($item);
+		 $contentText = do_highlite($contentText,$title);
 		 $extraText = str_replace("\n","<br/>\n",$contentText);
 	}
 	if($kind == "Announcement") {
 	   list($contentText,$other) = decode_announcement($item);
+		 $contentText = do_highlite($contentText,$title);
 		 $extraText = str_replace("\n","<br/>\n",$contentText);
 		 if(isset($_REQUEST['summary']) and is_array($summaryAnnounce) and !empty($summaryAnnounce[0]) ) {
 			 foreach ($summaryAnnounce as $i => $tstr) {
@@ -311,6 +355,7 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		}
 	}
 	if(strlen($roadmapText) > 0) { // add any extra text to the roadmap
+	  $roadmapText = do_highlite($roadmapText,$title);
 		$roadmapText = str_replace("\n","<br/>\n",$roadmapText);
 		$extraText .= "<br/>\n".$roadmapText;
 	}
@@ -581,6 +626,8 @@ function decode_autoadvance($item) {
 	return($out);
 }
 
+# ----------------------------------------------------------
+
 function xml_spanfix($inXML) {
 	$t = $inXML;
 	
@@ -666,7 +713,10 @@ function format_song($lyricsText,$verseOrder,$copyright,$hymn) {
 			$out .= $Verses[$key]. "\n";
 		}
 	}
-
+  global $highlite;
+	if($highlite == 'S') {
+		$out = '<mark>'.trim($out).'</mark><br/><br/>';
+	}
 //	$out .= print_r($Verses,true)."\n";
 	$out .= "<span style=\"font-size: 11pt;font-style:italic;\">$copyright</span>\n";
 	
@@ -993,6 +1043,76 @@ function get_zipfile_json ($za) {
 
 } // end get_zipfile_json
 
+#---------------------------------------------------------  
+# scan text and highlite if requested
+#---------------------------------------------------------  
+
+function do_highlite($intxt,$title) {
+	global $highlite;
+	if($highlite == '' or
+	   stripos($title,'credit') !== false ) {
+		 return($intxt);
+	}
+
+	$whoDoesSlide = who_does($title);
+	print "<!-- do_highlite title='$title'\n whoDoesSlide='$whoDoesSlide' -->\n";
+	$matches = preg_split('!\n\n!Uis',$intxt."\n\n");
+	if($matches == false) {
+		return($intxt);
+	}
+	
+	$newtxt = '';
+	$doHighlite = false;
+	
+	foreach ($matches as $i => $txt) {
+		if(strlen(trim($txt)) < 1) {continue;}
+		$whoDoesText = who_does(trim($txt));
+		print "<!-- do_highlite txt whoDoesText='$whoDoesText' -->";
+		$doHighlite = false;
+#		if($highlite = '') {
+#			$newtxt .= $txt . "\n\n";
+#			continue;
+#		}
+		if($whoDoesSlide == $highlite) {$doHighlite = true; }
+#		if($whoDoesSlide == $highlite and 
+#		   $whoDoesText !== '' and $whoDoesText !== $highlite) {$doHighlite = $doHighlite; }
+		if($whoDoesText == $highlite) {$doHighlite = true; }
+		
+		if($doHighlite and stripos($txt,'<li>') !== false) { # handle lists differently than plain text
+			$t = str_replace("<li>\n",'<li><mark>',$txt);
+			$t = str_replace('</li>','</mark></li>',$t);
+			$newtxt .= $t;
+			continue;
+		}
+		if ($doHighlite) { # plain text highlite
+			$newtxt .= "<mark>".trim($txt).'</mark>'."\n\n";
+		} else {
+			$newtxt .= $txt . "\n\n";
+		}
+	}
+	$newtxt = str_replace('<mark><strong></strong></mark>','',$newtxt);
+	$newtxt = str_replace('<mark><em></em></mark>','',$newtxt);
+	$newtxt = str_replace('<mark></mark>','',$newtxt);
+	
+	return(trim($newtxt));
+} # end do_highlite
+
+#---------------------------------------------------------  
+# determine who does based on title or text for highlite
+#---------------------------------------------------------  
+
+function who_does($text) {
+	global $lookfor;
+	
+	foreach ($lookfor as $key => $who) {
+		if(stripos($text,$key) !== false) {
+			return($who);
+		}
+	}
+	return('');
+}
+
+
 function get_audio_info($list,$allJSON) {
 	$t = '';
 	foreach ($list as $i => $key) {
@@ -1015,6 +1135,8 @@ function get_audio_info($list,$allJSON) {
 	
 	return($t);
 }
+
+# ----------------------------------------------------------
 
 function get_local_video_info($content,$allJSON) {
 	$t = '';
@@ -1050,6 +1172,8 @@ function get_local_video_info($content,$allJSON) {
 	return($t);
 }
 
+# ----------------------------------------------------------
+
 function get_video_info($list,$allJSON) {
 	$t = '';
 	$foundKey = false;
@@ -1078,6 +1202,8 @@ function get_video_info($list,$allJSON) {
 	}
 	return($t);
 }
+
+# ----------------------------------------------------------
 
 function print_css() {
 	if(isset($_GET['avtech'])) {
@@ -1378,6 +1504,12 @@ a:hover, a:active, a:focus {
   text-align: left;
   color: #000;
   margin-bottom: 1em;
+}
+.mark {
+  background-color: yellow !important;
+  color: black !important;
+	box-sizing: content-box !important;
+	display: inline !important;
 }
 
 .section {
