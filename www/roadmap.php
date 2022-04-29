@@ -50,7 +50,8 @@
 # Version 1.105 - 31-Dec-2021 - add details to Summary for Announcement with Prelude/Postlude/Anthem
 # Version 1.106 - 16-Jan-2022 - add detail of audio file to Summary for Song file 
 # Version 1.107 - 16-Mar-2022 - add verse# display in ?avtech listing
-# Version 1.200 - 09-Apr-2022 - add higlight feature for Pastor, Lay Reader, Song Leader, Comm. Asst. 
+# Version 1.200 - 09-Apr-2022 - add highlight feature for Pastor, Lay Reader, Song Leader, Comm. Asst.
+# Version 1.201 - 29-Apr-2022 - minor tweak to <title> when highlighting is used 
 
 include_once("settings-common.php");
 
@@ -64,7 +65,7 @@ $lookfor = array( # service participants in open text
 );
 
 
-$Version = 'roadmap.php - Version 1.200 - 09-Apr-2022';
+$Version = 'roadmap.php - Version 1.201 - 29-Apr-2022';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -954,6 +955,8 @@ function cleanup_html($input) {
 # ----------------------------------------------------------
 
 function do_print_header($title) {
+	$useTitle = str_replace('<br>',' - ',$title);
+	$useTitle = strip_tags($useTitle);
 ?><!doctype html>
 <html lang="en">
 <head>
@@ -963,7 +966,7 @@ function do_print_header($title) {
 <meta name="Keywords" content="worship service roadmap faithlife proclaim">
 <meta name="Description" content="Display worship service roadmap from backup Proclaim .prs slide backup">
 <meta name="Robots" content="index,nofollow">
-<title><?php echo $title; ?></title>
+<title><?php echo $useTitle; ?></title>
 <style>
 <!--
 <?php print_css(); ?>
