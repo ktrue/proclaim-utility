@@ -51,7 +51,9 @@
 # Version 1.106 - 16-Jan-2022 - add detail of audio file to Summary for Song file 
 # Version 1.107 - 16-Mar-2022 - add verse# display in ?avtech listing
 # Version 1.200 - 09-Apr-2022 - add highlight feature for Pastor, Lay Reader, Song Leader, Comm. Asst.
-# Version 1.201 - 29-Apr-2022 - minor tweak to <title> when highlighting is used 
+# Version 1.201 - 29-Apr-2022 - minor tweak to <title> when highlighting is used
+# Version 1.202 - 23-May-2022 - add display of audio track in Announcement type slide 
+# Version 1.203 - 09-Jun-2022 - add Video info on Summary display
 
 include_once("settings-common.php");
 
@@ -65,7 +67,7 @@ $lookfor = array( # service participants in open text
 );
 
 
-$Version = 'roadmap.php - Version 1.201 - 29-Apr-2022';
+$Version = 'roadmap.php - Version 1.203 - 09-Jun-2022';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -309,6 +311,21 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 			 }
 			 
 		 }
+		 if(isset($item['content']['Audio'])) {
+			 $tJ = json_decode($item['content']['Audio'],true);
+			 if(isset($tJ['audioTracks']) and count($tJ['audioTracks']) > 0) {
+				$t = get_audio_info($tJ['audioTracks'],$allJSON);
+		    $play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
+				#if(isset($_GET['avtech'])) {
+			    $extraText = " <small><em>[$play Audio Track $t]</em></small><br/>" . $extraText;
+				#}
+				if(isset($_GET['summary'])) {
+					$title .= '<span style="font-size: 12px;color: green;display: block; padding-left: 2em;">';
+					$title .= "<small><em>[$play Audio Track $t]</em></small></span>";
+				}
+			 }
+		 }
+
 	}
 	if($kind == "WebPage") {
 		$play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
@@ -335,6 +352,11 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		if($endOpt == 'AutoAdvance') {
 			$title .= " <span class=\"vsignal\"><em>[Note: will auto advance to next slide at end of video]</em></span>";
 		}
+		if(isset($_GET['summary'])) {
+					$title .= '<span style="font-size: 12px;color: green;display: block; padding-left: 2em;">';
+					$title .= "<small><em>[$play Video $t]</em></small></span>";
+		}
+
 	}
 	if($kind == 'StageDirectionCue') {
 			$rawXML = '<xmlstuff>'.(string)$item['content']['StageDirectionDetails'].'</xmlstuff>';
