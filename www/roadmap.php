@@ -54,6 +54,7 @@
 # Version 1.201 - 29-Apr-2022 - minor tweak to <title> when highlighting is used
 # Version 1.202 - 23-May-2022 - add display of audio track in Announcement type slide 
 # Version 1.203 - 09-Jun-2022 - add Video info on Summary display
+# Version 1.204 - 19-Jun-2022 - modified <title> for better information display
 
 include_once("settings-common.php");
 
@@ -67,7 +68,7 @@ $lookfor = array( # service participants in open text
 );
 
 
-$Version = 'roadmap.php - Version 1.203 - 09-Jun-2022';
+$Version = 'roadmap.php - Version 1.204 - 18-Jun-2022';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -114,7 +115,7 @@ $allJSON = array();
 if (file_exists($aFile)) { $allJSON = unserialize(file_get_contents($aFile)); }
 
 if(isset($_GET['list']) and !isset($_FILES['upload']['tmp_name'])) {
-	do_print_header('Worship Roadmap List');
+	do_print_header('Worship Roadmap List','list of available roadmaps');
 	if(!empty($extraText)) { print $extraText; }
 	print "<p>Listing of available roadmaps</p>\n";
 	
@@ -224,7 +225,7 @@ if($highlite == 'C') {
 	$title .= "<br><small>Highlighted for <mark>Communion Assistant</mark></small>";
 }
 
-do_print_header($title);
+do_print_header($title,'Updated: '.date('l, F d, Y g:i:sa',strtotime($latestModifiedDate)));
 
 print "<h3 style=\"text-align:center;margin: 0 auto !important;\">$title</h3>\n";
 print "<h5 style=\"text-align:center;margin: 0 auto !important;\">Updated: ".date('l, F d, Y g:i:sa',strtotime($latestModifiedDate))."</h5>\n";
@@ -976,7 +977,7 @@ function cleanup_html($input) {
 
 # ----------------------------------------------------------
 
-function do_print_header($title) {
+function do_print_header($title,$subtitle='') {
 	$useTitle = str_replace('<br>',' - ',$title);
 	$useTitle = strip_tags($useTitle);
 ?><!doctype html>
@@ -986,7 +987,7 @@ function do_print_header($title) {
 <meta name="author" content="Ken True">
 <meta name="copyright" content="&copy; <?php echo gmdate('Y'); ?>, CampbellUCC.org">
 <meta name="Keywords" content="worship service roadmap faithlife proclaim">
-<meta name="Description" content="Display worship service roadmap from backup Proclaim .prs slide backup">
+<meta name="Description" content="Worship service roadmap <?php echo $subtitle; ?>">
 <meta name="Robots" content="index,nofollow">
 <title><?php echo $useTitle; ?></title>
 <style>
