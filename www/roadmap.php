@@ -55,6 +55,7 @@
 # Version 1.202 - 23-May-2022 - add display of audio track in Announcement type slide 
 # Version 1.203 - 09-Jun-2022 - add Video info on Summary display
 # Version 1.204 - 19-Jun-2022 - modified <title> for better information display
+# Version 1.205 - 06-Jul-2022 - added ?listall and 2 month filter for ?list for past roadmap displays
 
 include_once("settings-common.php");
 
@@ -68,7 +69,7 @@ $lookfor = array( # service participants in open text
 );
 
 
-$Version = 'roadmap.php - Version 1.204 - 18-Jun-2022';
+$Version = 'roadmap.php - Version 1.205 - 06-Jul-2022';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -114,14 +115,24 @@ $aFile = str_replace('.json','-alljson.txt',$tFile);
 $allJSON = array();
 if (file_exists($aFile)) { $allJSON = unserialize(file_get_contents($aFile)); }
 
-if(isset($_GET['list']) and !isset($_FILES['upload']['tmp_name'])) {
-	do_print_header('Worship Roadmap List','list of available roadmaps');
+if((isset($_GET['list']) or isset($_GET['listall'])) and !isset($_FILES['upload']['tmp_name'])) {
+	$filterList = isset($_GET['listall'])?false:true;
+	if($filterList) {
+		$displayOldest = date('Y-m-d',strtotime('-2 months'));
+		$Oldest = "List of available roadmaps starting $displayOldest ";
+	} else {
+		$displayOldest = '2018-01-01';
+		$Oldest = "List of all roadmaps";
+	}
+	do_print_header('Worship Roadmap List',$Oldest);
 	if(!empty($extraText)) { print $extraText; }
-	print "<p>Listing of available roadmaps</p>\n";
+	print "<p>$Oldest</p>\n";
 	
 	print "<ul>\n";
 	foreach ($availableFiles as $name => $file) {
 		$link = str_replace($archiveDir,'',$file);
+		$tDate = substr($link,0,10);
+		if($tDate < $displayOldest) { continue; }
 		$link = str_replace('.json','',$link);
 		
 		print "<li><a href=\"?show=$link\">$name Roadmap</a> | <small> <a href=\"?show=$link&amp;avtech\">with A/V cues</a> | <a href=\"?show=$link&amp;summary\">Summary/Outline</a> | Highlite: ( ";
