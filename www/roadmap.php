@@ -56,6 +56,7 @@
 # Version 1.203 - 09-Jun-2022 - add Video info on Summary display
 # Version 1.204 - 19-Jun-2022 - modified <title> for better information display
 # Version 1.205 - 06-Jul-2022 - added ?listall and 2 month filter for ?list for past roadmap displays
+# Version 1.206 - 06-Jul-2022 - highlight next Sunday in ?list and ?listall
 
 include_once("settings-common.php");
 
@@ -69,7 +70,7 @@ $lookfor = array( # service participants in open text
 );
 
 
-$Version = 'roadmap.php - Version 1.205 - 06-Jul-2022';
+$Version = 'roadmap.php - Version 1.206 - 06-Jul-2022';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -134,12 +135,19 @@ if((isset($_GET['list']) or isset($_GET['listall'])) and !isset($_FILES['upload'
 		$tDate = substr($link,0,10);
 		if($tDate < $displayOldest) { continue; }
 		$link = str_replace('.json','',$link);
-		
-		print "<li><a href=\"?show=$link\">$name Roadmap</a> | <small> <a href=\"?show=$link&amp;avtech\">with A/V cues</a> | <a href=\"?show=$link&amp;summary\">Summary/Outline</a> | Highlite: ( ";
+		print "<!-- tDate = '$tDate' nextService = '$nextService' -->";
+		if($tDate == substr($nextService,0,10)) {
+			$tNextStart = "<strong>Next Service: ";
+			$tNextEnd   = "</strong>";
+		} else {
+			$tNextStart = "";
+			$tNextEnd   = "";
+		}
+		print "<li>$tNextStart<a href=\"?show=$link\">$name Roadmap</a> | <small> <a href=\"?show=$link&amp;avtech\">with A/V cues</a> | <a href=\"?show=$link&amp;summary\">Summary/Outline</a> | Highlite: ( ";
 		print "<a href=\"?show=$link&amp;hilite=past\">Pastor</a> | ";
 		print "<a href=\"?show=$link&amp;hilite=lay\">Lay Reader</a> | ";
 		print "<a href=\"?show=$link&amp;hilite=song\">Song Leader</a> | ";
-		print "<a href=\"?show=$link&amp;hilite=ca\">Comm. Asst.</a> )</small></li>\n";
+		print "<a href=\"?show=$link&amp;hilite=ca\">Comm. Asst.</a> )</small>$tNextEnd</li>\n";
 	}
 	print "</ul>\n";
 	do_print_footer("<small><small>$Version</small></small>");
