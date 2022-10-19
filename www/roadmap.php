@@ -57,6 +57,7 @@
 # Version 1.204 - 19-Jun-2022 - modified <title> for better information display
 # Version 1.205 - 06-Jul-2022 - added ?listall and 2 month filter for ?list for past roadmap displays
 # Version 1.206 - 06-Jul-2022 - highlight next Sunday in ?list and ?listall
+# Version 1.207 - 19-Oct-2022 - highlight for Stage Direction text after **** in roadmap display
 
 include_once("settings-common.php");
 
@@ -70,7 +71,7 @@ $lookfor = array( # service participants in open text
 );
 
 
-$Version = 'roadmap.php - Version 1.206 - 06-Jul-2022';
+$Version = 'roadmap.php - Version 1.207 - 19-Oct-2022';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -420,6 +421,7 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		}
 		if(strlen($other) > 0) {
 			$other = cleanup_html($other);
+			$other = do_highlite($other,$title);
 			$other = str_replace("\n","<br/>\n",$other);
 			print "<p class=\"service\"><!-- other -->$other\n<!-- end class=service -->\n</p>\n";
 		}
