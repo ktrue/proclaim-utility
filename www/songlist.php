@@ -4,7 +4,10 @@
 # songlist.php
 # License:  GNU GPLV3
 # Author: Ken True
+# Version 1.01 - 11-Nov-2022 - update to fix duplicated hymnal names in display
 # ------------------------------------------------
+error_reporting(E_ALL);
+ini_set('display_errors','On');
 include_once("settings-common.php");
 // header('Content-type: text/plain;charset=UTF-8');
 $legend = array("Title","Author","Hymnal","CCLI","VerseOrder","Copyright");
@@ -135,7 +138,7 @@ Christ is spoken and seen and heard.
 )
  -->
  */
-   $type = (string)$v{'name'};
+   $type = (string)$v['name'];
 	 $verse = (string)$v->lines;
 	 $tlong = $vtypes[substr($type,0,1)]. substr($type,1).':'."\n";
 	 if($k>0) {
@@ -151,7 +154,11 @@ Christ is spoken and seen and heard.
 		  $SITE['hymnalList'],
 			$SITE['hymnalListAbbrev'],
 			$hymnalname);
-		$hymn .= '#'.$hymnal;
+		if(strpos($hymnal,'#') == false) { // already specified hymnal abbreviation in the name?
+		  $hymn .= '#'.$hymnal; // no.. insert hymnal abbrev before hymn number
+		} else {
+			$hmmn = $hymnal;      // yes.. already have a hymn number citation.
+		}
 		
 	} else {
 		$hymn = '';
