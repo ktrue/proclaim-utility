@@ -5,6 +5,7 @@
 # License:  GNU GPLV3
 # Author: Ken True
 # Version 1.01 - 11-Nov-2022 - update to fix duplicated hymnal names in display
+# Version 1.02 - 12-Nov-2022 - correction to fix duplicated hymnal names in CSV entries
 # ------------------------------------------------
 error_reporting(E_ALL);
 ini_set('display_errors','On');
@@ -103,11 +104,11 @@ function get_lyrics_file($file) {
 	} else {$comments = '';}
 	if(isset($XML->songbooks->songbook)) {
 		$hymnalname = (string)$XML->songbooks->songbook['name'];
-		$hymnal     = (string)$XML->songbooks->songbook['entry'];
+		$hymnalsong     = (string)$XML->songbooks->songbook['entry'];
 		//print "<p>Hymnalname='$hymnalname' entry='$hymnal'</p>\n";
 	} else {
 		$hymnalname = '';
-		$hymnal = '';
+		$hymnalsong = '';
 	}
 	$verses = '';
 	/* Verse, Chorus, Bridge, Pre-Chorus, Intro, Ending and Other */
@@ -149,15 +150,15 @@ Christ is spoken and seen and heard.
 	 //print "i=$i '$type' '$verse'\n";
 	}
 	
-	if(!empty($hymnalname)) {
-		$hymn = str_replace(
-		  $SITE['hymnalList'],
-			$SITE['hymnalListAbbrev'],
-			$hymnalname);
-		if(strpos($hymnal,'#') == false) { // already specified hymnal abbreviation in the name?
-		  $hymn .= '#'.$hymnal; // no.. insert hymnal abbrev before hymn number
+	if(!empty($hymnalname) and !empty($hymnalsong)) {
+		if(strpos($hymnalsong,'#') == false) { // did we already specify hymnal abbreviation in the name?
+			$hymn = str_replace(
+				$SITE['hymnalList'],
+				$SITE['hymnalListAbbrev'],
+				$hymnalname);
+		  $hymn .= '#'.$hymnalsong; // no.. insert hymnal abbrev before hymn number
 		} else {
-			$hmmn = $hymnal;      // yes.. already have a hymn number citation.
+			$hymn = $hymnalsong;      // yes.. already have a hymn number citation.
 		}
 		
 	} else {
