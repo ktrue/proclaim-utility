@@ -58,6 +58,7 @@
 # Version 1.205 - 06-Jul-2022 - added ?listall and 2 month filter for ?list for past roadmap displays
 # Version 1.206 - 06-Jul-2022 - highlight next Sunday in ?list and ?listall
 # Version 1.207 - 19-Oct-2022 - highlight for Stage Direction text after **** in roadmap display
+# Version 1.208 - 19-Dec-2022 - modify logic to look for next service
 
 include_once("settings-common.php");
 
@@ -71,7 +72,7 @@ $lookfor = array( # service participants in open text
 );
 
 
-$Version = 'roadmap.php - Version 1.207 - 19-Oct-2022';
+$Version = 'roadmap.php - Version 1.208 - 19-Dec-2022';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -91,8 +92,17 @@ if ( file_exists($archiveDir.'filelist.txt') ) {
   $t = file_get_contents($archiveDir.'filelist.txt');
   $availableFiles = unserialize( $t );
 }
-//var_export($archiveFiles);
+file_put_contents($archiveDir.'filelist-full.txt',var_export($archiveFiles,true));
 //return;
+$nowYMD = date('Y-m-d');
+
+foreach ($archiveFiles as $i => $fn) {
+	$t = str_replace($archiveDir,'',$fn);
+	if(substr($t,0,10) >= $nowYMD) {
+		$nextService = str_replace('.json','',$t);
+		break;
+	}
+}
 
 if(isset($_GET['show'])) {
 	$tFile = $archiveDir.$_GET['show'].'.json';
@@ -109,7 +119,7 @@ if(isset($_GET['show'])) {
 	  $JSON = json_decode($rawJSON,true);
 	} else {
 		$_GET['list'] = 'list';
-		$extraText = "<p>Sorry, the roadmap for the coming Sunday is not yet available.</p>\n";
+		$extraText = "<p>Sorry, the roadmap for the coming Sunday ($nextService) is not yet available.</p>\n";
 	}
 }
 
@@ -359,7 +369,7 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		             " )";
 	}
 	if($kind == 'Video') {
-		$play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
+		$play = (isset($item['content']['AutoPlay']) and $item['content']['AutoPlay']=='true')?'Autoplay':'Manual play';
 		$t = get_video_info($item['media'],$allJSON);
 		if($t == '') {
 			$t = get_local_video_info($item['content'],$allJSON);
