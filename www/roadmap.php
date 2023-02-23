@@ -59,6 +59,7 @@
 # Version 1.206 - 06-Jul-2022 - highlight next Sunday in ?list and ?listall
 # Version 1.207 - 19-Oct-2022 - highlight for Stage Direction text after **** in roadmap display
 # Version 1.208 - 19-Dec-2022 - modify logic to look for next service
+# Version 1.209 - 22-Feb-2023 - added Author/Credit display to SongLyrics
 
 include_once("settings-common.php");
 
@@ -72,7 +73,7 @@ $lookfor = array( # service participants in open text
 );
 
 
-$Version = 'roadmap.php - Version 1.208 - 19-Dec-2022';
+$Version = 'roadmap.php - Version 1.209 - 22-Feb-2023';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -498,7 +499,8 @@ function decode_lyrics($item) {
 	$rawLyricsXML = xml_spanfix($rawLyricsXML);
 	//$rawLyricsXML = preg_replace('!<span[^>]*>!Uis','',$rawLyricsXML);
 	//$rawLyricsXML = preg_replace('!</span>!Uis','',$rawLyricsXML);
-	$copyright = isset($item['content']['_textfield:Copyright'])?$item['content']['_textfield:Copyright']:'';
+	$copyright  = isset($item['content']['_textfield:Credits'])?$item['content']['_textfield:Credits'].'; ':'';
+	$copyright .= isset($item['content']['_textfield:Copyright'])?$item['content']['_textfield:Copyright']:'';
 	$hymn =      !empty($item['content']['_textfield:Hymn Number'])?$item['content']['_textfield:Hymn Number']:'';
   if(strlen(trim($hymn)) < 1 and !empty($item['content']['_textfield:Song Number'])) {
 		$copyright .= ' CCLI Song #'.$item['content']['_textfield:Song Number'];
