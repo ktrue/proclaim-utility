@@ -60,6 +60,7 @@
 # Version 1.207 - 19-Oct-2022 - highlight for Stage Direction text after **** in roadmap display
 # Version 1.208 - 19-Dec-2022 - modify logic to look for next service
 # Version 1.209 - 22-Feb-2023 - added Author/Credit display to SongLyrics
+# Version 1.210 - 17-Apr-2023 - added ?avdetail option and simplified ?avtech to omit signals display
 
 include_once("settings-common.php");
 
@@ -67,13 +68,15 @@ global $lookfor;
 $lookfor = array( # service participants in open text
 	'lay reader:'  => 'L', # Note: Scripture will generally be highlited for Lay Reader/Lay Leader
 	'lay leader:'  => 'L',
+#	'congregation:'  => 'L',
 	'song leader:' => 'S', # Note: Songs will always be highlited for Song Leader
 	'pastor:'		  => 'P',
-	'communion assistant:' => 'C',
+#	'Chancel:'		  => 'P',
+#	'communion assistant:' => 'C',
 );
 
 
-$Version = 'roadmap.php - Version 1.209 - 22-Feb-2023';
+$Version = 'roadmap.php - Version 1.210 - 17-Apr-2023';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -155,11 +158,16 @@ if((isset($_GET['list']) or isset($_GET['listall'])) and !isset($_FILES['upload'
 			$tNextStart = "";
 			$tNextEnd   = "";
 		}
-		print "<li>$tNextStart<a href=\"?show=$link\">$name Roadmap</a> | <small> <a href=\"?show=$link&amp;avtech\">with A/V cues</a> | <a href=\"?show=$link&amp;summary\">Summary/Outline</a> | Highlite: ( ";
+		print "<li>$tNextStart<a href=\"?show=$link\">$name Roadmap</a> | <small><small> ";
+		print "<a href=\"?show=$link&amp;avtech\">A/V operator</a> | ";
+		print "<a href=\"?show=$link&amp;summary\">Summary/Outline</a> | Highlite: ( ";
 		print "<a href=\"?show=$link&amp;hilite=past\">Pastor</a> | ";
 		print "<a href=\"?show=$link&amp;hilite=lay\">Lay Reader</a> | ";
 		print "<a href=\"?show=$link&amp;hilite=song\">Song Leader</a> | ";
-		print "<a href=\"?show=$link&amp;hilite=ca\">Comm. Asst.</a> )</small>$tNextEnd</li>\n";
+#		print "<a href=\"?show=$link&amp;hilite=ca\">Comm. Asst.</a> ";
+		print ")";
+		print " | <a href=\"?show=$link&amp;avdetail\">detailed A/V cues</a>";
+		print "</small></small>$tNextEnd</li>\n";
 	}
 	print "</ul>\n";
 	do_print_footer("<small><small>$Version</small></small>");
@@ -238,7 +246,10 @@ if (isset($_GET['hilite']) ) {
 
 $title = "Worship Roadmap - $serviceDate";
 if(isset($_GET['avtech'])) {
-	$title = "A/V Tech - " . $title;
+	$title = "A/V Operator - " . $title;
+}
+if(isset($_GET['avdetail'])) {
+	$title = "A/V Details - " . $title;
 }
 if(isset($_GET['summary'])) {
 	$title = "Summary " . $title;
@@ -294,7 +305,7 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		 if(isset($_GET['summary'])) {
 			 $title .= "<br/>$other";
 		 }
-		 if(isset($_GET['avtech'])) {
+		 if(isset($_GET['avdetail'])) {
 			 $title .= "<br/><p class=\"vsignal\"$other</p>";
 		 }
 		 if(isset($item['content']['Audio'])) {
@@ -302,7 +313,7 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 			 if(isset($tJ['audioTracks']) and count($tJ['audioTracks']) > 0) {
 				$t = get_audio_info($tJ['audioTracks'],$allJSON);
 		    $play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
-				if(isset($_GET['avtech'])) {
+				if(isset($_GET['avtech']) or isset($_GET['avdetail'])) {
 			    $extraText = " <small><em>[$play Audio Track $t]</em></small><br/>" . $extraText;
 				}
 				if(isset($_GET['summary'])) {
@@ -405,7 +416,7 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 	}
   if(isset($item['signals']) and count($item['signals']) > 0) {
 		$txt = decode_signal($item,$kIndex);
-		if(strlen($txt) > 1) {
+		if(strlen($txt) > 1 and isset($_GET['avdetail'])) {
 		 print "<p class=\"vsignal\">$txt</p>\n";
 		}
 	}
@@ -1265,8 +1276,8 @@ function get_video_info($list,$allJSON) {
 # ----------------------------------------------------------
 
 function print_css() {
-	if(isset($_GET['avtech'])) {
-    print '/* AVTECH special CSS for printing */
+	if(isset($_GET['avtech']) or isset($_GET['avdetail'])) {
+    print '/* AVTECH/AVDETAIL special CSS for printing */
 body {
 	font-family: Arial, Helvetica, sans-serif;
   font-size: 16pt;
