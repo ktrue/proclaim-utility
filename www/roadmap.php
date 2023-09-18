@@ -61,6 +61,8 @@
 # Version 1.208 - 19-Dec-2022 - modify logic to look for next service
 # Version 1.209 - 22-Feb-2023 - added Author/Credit display to SongLyrics
 # Version 1.210 - 17-Apr-2023 - added ?avdetail option and simplified ?avtech to omit signals display
+# Version 1.211 - 18-Sep-2023 - fixed Notice errata re $item['content']['AutoPlay'] missing
+
 
 include_once("settings-common.php");
 
@@ -76,7 +78,7 @@ $lookfor = array( # service participants in open text
 );
 
 
-$Version = 'roadmap.php - Version 1.210 - 17-Apr-2023';
+$Version = 'roadmap.php - Version 1.211 - 18-Sep-2023';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -312,7 +314,11 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 			 $tJ = json_decode($item['content']['Audio'],true);
 			 if(isset($tJ['audioTracks']) and count($tJ['audioTracks']) > 0) {
 				$t = get_audio_info($tJ['audioTracks'],$allJSON);
-		    $play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
+				if(isset($item['content']['AutoPlay'])) {
+		      $play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
+				} else {
+		      $play = '';
+				}
 				if(isset($_GET['avtech']) or isset($_GET['avdetail'])) {
 			    $extraText = " <small><em>[$play Audio Track $t]</em></small><br/>" . $extraText;
 				}
@@ -358,10 +364,12 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 			 $tJ = json_decode($item['content']['Audio'],true);
 			 if(isset($tJ['audioTracks']) and count($tJ['audioTracks']) > 0) {
 				$t = get_audio_info($tJ['audioTracks'],$allJSON);
-		    $play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
-				#if(isset($_GET['avtech'])) {
+		    if(isset($item['content']['AutoPlay'])) {
+  		    $play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
 			    $extraText = " <small><em>[$play Audio Track $t]</em></small><br/>" . $extraText;
-				#}
+				} else {
+			    $extraText = " <small><em>[Audio Track $t]</em></small><br/>" . $extraText;
+				}
 				if(isset($_GET['summary'])) {
 					$title .= '<span style="font-size: 12px;color: green;display: block; padding-left: 2em;">';
 					$title .= "<small><em>[$play Audio Track $t]</em></small></span>";
@@ -371,14 +379,23 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 
 	}
 	if($kind == "WebPage") {
-		$play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
-		$extraText = "($play of <a href=\"" . $item['content']['PageUrl']."\" target=\"_blank\">".
+		if(isset($item['content']['AutoPlay'])) {
+  		$play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
+		  $extraText = "($play of <a href=\"" . $item['content']['PageUrl']."\" target=\"_blank\">".
 		             $item['content']['PageUrl']."</a> )";
+		} else {
+		  $extraText = "(webpage <a href=\"" . $item['content']['PageUrl']."\" target=\"_blank\">".
+		             $item['content']['PageUrl']."</a> )";
+		}
+		
 	}
 	if($kind == 'PowerPointDriven') {
-		$play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
-		$extraText = "($play of " . $item['content']['FilePath'].
-		             " )";
+		if(isset($item['content']['AutoPlay'])) {
+			$play = ($item['content']['AutoPlay']=='true')?'Autoplay':'Manual play';
+		  $extraText = "($play of " . $item['content']['FilePath']." )";
+		} else {
+			$extraText = "(".$item['content']['FilePath']." )";
+		}
 	}
 	if($kind == 'Video') {
 		$play = (isset($item['content']['AutoPlay']) and $item['content']['AutoPlay']=='true')?'Autoplay':'Manual play';
