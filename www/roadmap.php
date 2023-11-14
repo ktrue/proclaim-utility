@@ -62,6 +62,7 @@
 # Version 1.209 - 22-Feb-2023 - added Author/Credit display to SongLyrics
 # Version 1.210 - 17-Apr-2023 - added ?avdetail option and simplified ?avtech to omit signals display
 # Version 1.211 - 18-Sep-2023 - fixed Notice errata re $item['content']['AutoPlay'] missing
+# Version 1.212 - 14-Nov-2023 - fixed Notice errata on $play
 
 
 include_once("settings-common.php");
@@ -78,7 +79,7 @@ $lookfor = array( # service participants in open text
 );
 
 
-$Version = 'roadmap.php - Version 1.211 - 18-Sep-2023';
+$Version = 'roadmap.php - Version 1.212 - 14-Nov-2023';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -368,6 +369,7 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
   		    $play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
 			    $extraText = " <small><em>[$play Audio Track $t]</em></small><br/>" . $extraText;
 				} else {
+					$play = '';
 			    $extraText = " <small><em>[Audio Track $t]</em></small><br/>" . $extraText;
 				}
 				if(isset($_GET['summary'])) {
