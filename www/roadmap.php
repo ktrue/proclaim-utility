@@ -63,6 +63,7 @@
 # Version 1.210 - 17-Apr-2023 - added ?avdetail option and simplified ?avtech to omit signals display
 # Version 1.211 - 18-Sep-2023 - fixed Notice errata re $item['content']['AutoPlay'] missing
 # Version 1.212 - 14-Nov-2023 - fixed Notice errata on $play
+# Version 1.213 - 22-Mar-2024 - fixed Song notes to honor new-lines
 
 
 include_once("settings-common.php");
@@ -79,7 +80,7 @@ $lookfor = array( # service participants in open text
 );
 
 
-$Version = 'roadmap.php - Version 1.212 - 14-Nov-2023';
+$Version = 'roadmap.php - Version 1.213 - 22-Mar-2024';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -293,6 +294,7 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		 list($lyrics,$other) = decode_lyrics($item);
 		 if(strlen($roadmapText) > 0) {
        $roadmapText = do_highlite($roadmapText,$title);
+			 $roadmapText = str_replace("\n","<br/>\n",$roadmapText);
 			 $roadmapText .= "<br/><br/>\n";
 		   $extraText = $roadmapText.$lyrics;
 			 $roadmapText = '';
