@@ -64,6 +64,7 @@
 # Version 1.211 - 18-Sep-2023 - fixed Notice errata re $item['content']['AutoPlay'] missing
 # Version 1.212 - 14-Nov-2023 - fixed Notice errata on $play
 # Version 1.213 - 22-Mar-2024 - fixed Song notes to honor new-lines
+# Version 1.214 - 25-Mar-2024 - added avtech display for scene and mixer unmuted channels
 
 
 include_once("settings-common.php");
@@ -80,7 +81,7 @@ $lookfor = array( # service participants in open text
 );
 
 
-$Version = 'roadmap.php - Version 1.213 - 22-Mar-2024';
+$Version = 'roadmap.php - Version 1.214 - 25-Mar-2024';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -167,10 +168,11 @@ if((isset($_GET['list']) or isset($_GET['listall'])) and !isset($_FILES['upload'
 		print "<a href=\"?show=$link&amp;summary\">Summary/Outline</a> | Highlite: ( ";
 		print "<a href=\"?show=$link&amp;hilite=past\">Pastor</a> | ";
 		print "<a href=\"?show=$link&amp;hilite=lay\">Lay Reader</a> | ";
-		print "<a href=\"?show=$link&amp;hilite=song\">Song Leader</a> | ";
+		print "<a href=\"?show=$link&amp;hilite=song\">Song Leader</a>";
 #		print "<a href=\"?show=$link&amp;hilite=ca\">Comm. Asst.</a> ";
 		print ")";
 		print " | <a href=\"?show=$link&amp;avdetail\">detailed A/V cues</a>";
+		print " | <a href=\"?show=$link&amp;avsummary\">summary A/V cues</a>";
 		print "</small></small>$tNextEnd</li>\n";
 	}
 	print "</ul>\n";
@@ -230,6 +232,33 @@ if(file_exists("./signals-list.txt")) {
 	$SignalsList = array();
 }
 
+$SignalsListType = array();
+$MixerChan = array();
+$OBSscene = 'Undefined';
+
+global $SignalsListType,$MixerChan,$OBSscene;
+
+foreach ($SignalsList as $key => $val) {
+	/*
+	# customized for Campbellucc list which appears as
+	'192ef931-90c3-4fd4-99e3-2fa725dca27f' => 'signal: OBS scene change to <strong>Standby</strong>',
+	'48297e2f-8be5-4fa5-852c-cbc8a174cf8d' => 'signal: sound mixer <strong>MUTE 1 Choir Left</strong>',
+  '12e87e16-ad7b-4545-b542-741782d8cca0' => 'signal: sound mixer <strong>UNMUTE 1 Choir Left</strong>',
+*/
+  if(strpos($val,' OBS ') !== false) {
+		if(preg_match('|<strong>(.*)</strong>|i',$val,$M)) {
+			$SignalsListType[$key] = "OBS|".$M[1];
+		}
+	}
+	
+	if(strpos($val,' mixer ') !== false) {
+		if(preg_match('|<strong>(\S+) ([\d-]+) (.*)</strong>|i',$val,$M)) {
+			$SignalsListType[$key] = "MIX|".$M[1]."|".$M[2]."|".$M[3];
+			$MixerChan[$M[2]] = array('unk',$M[3]);
+		}
+	}
+}
+
 for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex++) {
   $item = $JSON['items'][$kIndex];
 	$lmod  = $item['modifiedDate'];
@@ -258,6 +287,9 @@ if(isset($_GET['avdetail'])) {
 if(isset($_GET['summary'])) {
 	$title = "Summary " . $title;
 }
+if(isset($_GET['avsummary'])) {
+	$title = "A/V Summary " . $title;
+}
 if($highlite == 'L') {
 	$title .= "<br><small>Highlighted for <mark>Lay Reader</mark></small>";
 }
@@ -273,15 +305,36 @@ if($highlite == 'C') {
 
 do_print_header($title,'Updated: '.date('l, F d, Y g:i:sa',strtotime($latestModifiedDate)));
 
+if(isset($_GET['avsummary']) or isset($_GET['avtech'])) {
+  print "<!-- SignalsListType = \n".var_export($SignalsListType,true). " -->\n";
+  print "<!-- MixerChan = \n".var_export($MixerChan,true). " -->\n";
+}
+
 print "<h3 style=\"text-align:center;margin: 0 auto !important;\">$title</h3>\n";
 print "<h5 style=\"text-align:center;margin: 0 auto !important;\">Updated: ".date('l, F d, Y g:i:sa',strtotime($latestModifiedDate))."</h5>\n";
 print "<!-- ".count($allJSON)." allJSON entries loaded -->\n";
-for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex++) {
+if(isset($_GET['avsummary'])) {
+	$kIndexStart = 0;
+	$kIndexEnd = count($JSON['items']);
+} else {
+	$kIndexStart =  $JSON['startIndex'];
+	$kIndexEnd  =  $JSON['postServiceStartIndex'];
+}
+print "<!-- processing entries $kIndexStart up to $kIndexEnd -->\n";
+for ($kIndex=$kIndexStart;$kIndex<$kIndexEnd;$kIndex++) {
   $item = $JSON['items'][$kIndex];
 	$title = $item['title'];
 	$kind  = $item['kind'];
 	$lmod  = $item['modifiedDate'];
-
+  if(isset($_GET['avsummary'])) {
+		print_avsection(
+		  $kIndex,
+		  $JSON['preServiceStartIndex'],
+		  $JSON['startIndex'],
+		  $JSON['postServiceStartIndex'],
+		  count($JSON['items'])
+		);
+	}
 	$extraText = '';
 	list($notes,$roadmapText) = decode_notes($item);
 
@@ -294,8 +347,8 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		 list($lyrics,$other) = decode_lyrics($item);
 		 if(strlen($roadmapText) > 0) {
        $roadmapText = do_highlite($roadmapText,$title);
-			 $roadmapText = str_replace("\n","<br/>\n",$roadmapText);
-			 $roadmapText .= "<br/><br/>\n";
+			 $roadmapText = str_replace("\n","<br>\n",$roadmapText);
+			 $roadmapText .= "<br><br>\n";
 		   $extraText = $roadmapText.$lyrics;
 			 $roadmapText = '';
 		 } else {
@@ -307,11 +360,11 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		 } else {
 		   $title = "Song: \"<em>$title</em>\"";
 		 }
-		 if(isset($_GET['summary'])) {
-			 $title .= "<br/>$other";
+		 if(isset($_GET['summary']) or isset($_GET['avsummary'])) {
+			 $title .= "<br>$other";
 		 }
 		 if(isset($_GET['avdetail'])) {
-			 $title .= "<br/><p class=\"vsignal\"$other</p>";
+			 $title .= "<br><p class=\"vsignal\"$other</p>";
 		 }
 		 if(isset($item['content']['Audio'])) {
 			 $tJ = json_decode($item['content']['Audio'],true);
@@ -323,9 +376,9 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		      $play = '';
 				}
 				if(isset($_GET['avtech']) or isset($_GET['avdetail'])) {
-			    $extraText = " <small><em>[$play Audio Track $t]</em></small><br/>" . $extraText;
+			    $extraText = " <small><em>[$play Audio Track $t]</em></small><br>" . $extraText;
 				}
-				if(isset($_GET['summary'])) {
+				if(isset($_GET['summary']) or isset($_GET['avsummary'])) {
 					$title .= '<span style="font-size: 12px;color: green;display: block; padding-left: 2em;">';
 					$title .= "<small><em>[$play Audio Track $t]</em></small></span>";
 				}
@@ -348,13 +401,14 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 	if($kind == "Content") {
 		 list($contentText,$other) = decode_content($item);
 		 $contentText = do_highlite($contentText,$title);
-		 $extraText = str_replace("\n","<br/>\n",$contentText);
+		 $extraText = str_replace("\n","<br>\n",$contentText);
 	}
 	if($kind == "Announcement") {
 	   list($contentText,$other) = decode_announcement($item);
 		 $contentText = do_highlite($contentText,$title);
-		 $extraText = str_replace("\n","<br/>\n",$contentText);
-		 if(isset($_REQUEST['summary']) and is_array($summaryAnnounce) and !empty($summaryAnnounce[0]) ) {
+		 $extraText = str_replace("\n","<br>\n",$contentText);
+		 if((isset($_GET['summary']) or isset($_GET['avsummary'])) 
+		    and is_array($summaryAnnounce) and !empty($summaryAnnounce[0]) ) {
 			 foreach ($summaryAnnounce as $i => $tstr) {
 				 if(stripos($title,$tstr) !== false) {
 					 $title .= " <em>".str_replace("\n",', ',$contentText)." </em>";
@@ -369,12 +423,12 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 				$t = get_audio_info($tJ['audioTracks'],$allJSON);
 		    if(isset($item['content']['AutoPlay'])) {
   		    $play = $item['content']['AutoPlay']=='true'?'Autoplay':'Manual play';
-			    $extraText = " <small><em>[$play Audio Track $t]</em></small><br/>" . $extraText;
+			    $extraText = " <small><em>[$play Audio Track $t]</em></small><br>" . $extraText;
 				} else {
 					$play = '';
-			    $extraText = " <small><em>[Audio Track $t]</em></small><br/>" . $extraText;
+			    $extraText = " <small><em>[Audio Track $t]</em></small><br>" . $extraText;
 				}
-				if(isset($_GET['summary'])) {
+				if(isset($_GET['summary']) or isset($_GET['avsummary'])) {
 					$title .= '<span style="font-size: 12px;color: green;display: block; padding-left: 2em;">';
 					$title .= "<small><em>[$play Audio Track $t]</em></small></span>";
 				}
@@ -407,7 +461,7 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		if($t == '') {
 			$t = get_local_video_info($item['content'],$allJSON);
 		}
-		$extraText .= " <small><em>[$play of Video$t]</em></small><br/>";
+		$extraText .= " <small><em>[$play of Video$t]</em></small><br>";
 		if(isset($item['content']['VideoEndOptions'])) {
 					$endOpt = $item['content']['VideoEndOptions'];
 		} else {
@@ -416,7 +470,7 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		if($endOpt == 'AutoAdvance') {
 			$title .= " <span class=\"vsignal\"><em>[Note: will auto advance to next slide at end of video]</em></span>";
 		}
-		if(isset($_GET['summary'])) {
+		if(isset($_GET['summary']) or isset($_GET['avsummary'])) {
 					$title .= '<span style="font-size: 12px;color: green;display: block; padding-left: 2em;">';
 					$title .= "<small><em>[$play Video $t]</em></small></span>";
 		}
@@ -428,10 +482,10 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 
 		list($extraText,$other) = xml_to_html($rawXML);
 		$extraText = cleanup_html($extraText);
-		$extraText = str_replace("\n","<br/>\n",$extraText);
+		$extraText = str_replace("\n","<br>\n",$extraText);
 	}
 	if(strlen($notes)> 1) { // AV cues before heading
-		$notes = str_replace("\n","<br/>\n",$notes);
+		$notes = str_replace("\n","<br>\n",$notes);
 		$notes = cleanup_html($notes);
 	  print "<p class=\"avcue\">$notes</p>\n";
 	}
@@ -443,8 +497,8 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 	}
 	if(strlen($roadmapText) > 0) { // add any extra text to the roadmap
 	  $roadmapText = do_highlite($roadmapText,$title);
-		$roadmapText = str_replace("\n","<br/>\n",$roadmapText);
-		$extraText .= "<br/>\n".$roadmapText;
+		$roadmapText = str_replace("\n","<br>\n",$roadmapText);
+		$extraText .= "<br>\n".$roadmapText;
 	}
 	$autoAdvanceText = decode_autoadvance($item);
 	if(strlen($autoAdvanceText) > 0) {
@@ -452,7 +506,8 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 	}
 	
 	if($kind !== 'StageDirectionCue') {
-		print "<p class=\"section\"><strong>$title</strong>$autoAdvanceText\n<!-- end class=section -->\n</p>\n";  // slide name is underlined heading
+		$avstate = isset($_GET['avsummary'])?display_avstate():'';
+		print "<p class=\"section\">$avstate<strong>$title</strong>$autoAdvanceText\n<!-- end class=section -->\n</p>\n";  // slide name is underlined heading
 		if(strlen($extraText) > 1) { // print all following stuff in slide if need be
 		  print "<!-- extraText='$extraText' -->\n";
 			$extraText = cleanup_html(trim($extraText));
@@ -465,15 +520,18 @@ for ($kIndex=$JSON['startIndex'];$kIndex<$JSON['postServiceStartIndex'];$kIndex+
 		if(strlen($other) > 0) {
 			$other = cleanup_html($other);
 			$other = do_highlite($other,$title);
-			$other = str_replace("\n","<br/>\n",$other);
+			$other = str_replace("\n","<br>\n",$other);
+			if(substr($other,0,9) == '</strong>') {
+				$other = substr($other,10);
+			}
 			print "<p class=\"service\"><!-- other -->$other\n<!-- end class=service -->\n</p>\n";
 		}
 	}
 	print "\n";
 }
-$footerText = "<small><small>This roadmap generated by $Version<br/>";
+$footerText = "<small><small>This roadmap generated by $Version<br>";
 $footerText .= "from Proclaim slides '<strong>".$JSON['title']."</strong>' for the <strong>".
-               $JSON['startTime']."</strong> worship service.<br/>";
+               $JSON['startTime']."</strong> worship service.<br>";
 $footerText .= "Slide set was last modified on <strong>".date('l, F d, Y g:i:sa',strtotime($latestModifiedDate)).
                "</strong></small></small>";
 # print "<!-- Lighting Signals Found\n".var_export($Signals,true)." -->\n";
@@ -544,6 +602,7 @@ function decode_lyrics($item) {
 	$useVerseOrder = isset($item['content']['CustomOrderSlides'])?$item['content']['CustomOrderSlides']:'';
 	$verseOrder = isset($item['content']['CustomOrderSequence'])?$item['content']['CustomOrderSequence']:'';
 	$lyricsText = '';
+
 	$other = '<span style="font-size: 12px;color: green;display: block; padding-left: 2em;">';
 	if($verseOrder == '') {
 		$other .= '[all verses]'; 
@@ -551,7 +610,7 @@ function decode_lyrics($item) {
 	  $other .= '['.$verseOrder.']'; 
 	}
 	if(!isset($_GET['avtech'])) {
-	  $other .= "<br/><span style=\"font-style: italic;\">$copyright</span></span>";
+	  $other .= "<br><span style=\"font-style: italic;\">$copyright</span></span>";
 	} else {
 		$other .= "</span>";
 	}
@@ -561,7 +620,7 @@ function decode_lyrics($item) {
 	}
 	
 	$formattedSong = format_song($lyricsText,$verseOrder,$copyright,$hymn);
-	$formattedSong = str_replace("\n","<br/>\n",$formattedSong);
+	$formattedSong = str_replace("\n","<br>\n",$formattedSong);
 	return (array($formattedSong,$other));
 	
 }
@@ -626,10 +685,10 @@ function decode_bible_passage($item) {
 		list($main,$extra) = xml_to_html($rawContent);
 		
 	}
-	$main = str_replace("\n","<br/>\n",trim($main));
+	$main = str_replace("\n","<br>\n",trim($main));
 	return( array( trim($main),trim($extra) ) );
 /*	
-	$contentText = str_replace("\n","<br/>\n",trim($contentText));
+	$contentText = str_replace("\n","<br>\n",trim($contentText));
 	return($contentText);
 */
 }
@@ -637,8 +696,50 @@ function decode_bible_passage($item) {
 # ----------------------------------------------------------
 
 function decode_signal($item,$slideNumber) {
-	global $Signals,$SignalsList;
-	
+	global $Signals,$SignalsList,$SignalsListType,$MixerChan,$OBSscene;
+/*
+SignalsListType = 
+array (
+  '192ef931-90c3-4fd4-99e3-2fa725dca27f' => 'OBS|Standby',
+  '88661193-b6ef-4b58-9ffa-32570cddb20d' => 'OBS|Slides only',
+  'baffb97c-3abe-434d-990d-d7b7dbaa1671' => 'OBS|Lectern-Wide',
+  'c1514aab-786e-4dc4-a5a2-ef0c1beafd61' => 'OBS|Lectern-Wide+Slides',
+  '831196ad-d216-46db-a19f-57321007076c' => 'OBS|Lectern-Zoom',
+  '0466979b-0542-44bb-b605-a7122b4b852c' => 'OBS|Lectern-Zoom+Slides',
+  'a1c024ce-3d00-4282-abf4-a5b94add8739' => 'OBS|Piano-Choir',
+  '42cb04d0-0bb4-46b5-9392-a1722e234f3f' => 'OBS|Piano-Choir+Slides',
+  'c8db08a3-4a6c-446c-a641-798ffc038657' => 'OBS|Ending',
+  '48297e2f-8be5-4fa5-852c-cbc8a174cf8d' => 'MIX|MUTE|1|Choir Left',
+  '12e87e16-ad7b-4545-b542-741782d8cca0' => 'MIX|UNMUTE|1|Choir Left',
+  '87786834-07c8-4fcc-b8dc-fe4d44a3106f' => 'MIX|MUTE|2|Choir Right',
+  '53ce7297-238d-4908-bffd-6a121c99a90b' => 'MIX|UNMUTE|2|Choir Right',
+  '0a031103-6112-42a1-b0fc-12616b78129b' => 'MIX|MUTE|3|Guitar',
+  'a8c331a0-fa8c-4adc-b9eb-046b68e5f8e7' => 'MIX|UNMUTE|3|Guitar',
+  '9a71381a-325b-4fe8-8128-7b49de7d5d0f' => 'MIX|MUTE|4|Podium Mic',
+  '59058d25-1205-492b-826b-032f94076150' => 'MIX|UNMUTE|4|Podium Mic',
+  '9e22cba9-74a4-44df-82ca-1143ae23d28a' => 'MIX|MUTE|5|Piano Vocal Mic',
+  '058de6b5-5715-476c-81df-0cf5b8060e0d' => 'MIX|UNMUTE|5|Piano Vocal Mic',
+  '3596876e-3abc-47da-a081-a46d092f5cee' => 'MIX|MUTE|8|Red Mic (OLD)',
+  '2403d64c-0eb6-441e-9f7b-24ae6a68eabd' => 'MIX|MUTE|8|Red Mic',
+  '76c35bed-7860-43fd-9f4a-f6c233171fea' => 'MIX|UNMUTE|8|Red Mic',
+  '585e9733-e7c3-4804-bb57-c9230493d068' => 'MIX|MUTE|9|Yellow Mic',
+  '5f607710-7172-43ad-887c-5a4e54c05ba2' => 'MIX|UNMUTE|9|Yellow Mic',
+  '4fcfc798-e502-4679-8d67-3a022076af44' => 'MIX|MUTE|10|Blue Mic',
+  '2d97db14-8791-42fb-a171-40402d62a310' => 'MIX|UNMUTE|10|Blue Mic',
+  'f7da4cf5-11c6-456e-875f-aad3d7fed016' => 'MIX|MUTE|11|Song Leader Mic',
+  '11f33e69-e1fc-43bf-bf49-56d38dac2fd3' => 'MIX|UNMUTE|11|Song Leader Mic',
+  'ff2f5c5f-0418-48e1-aadb-1266af708761' => 'MIX|MUTE|12|Lay Reader Mic',
+  '437c78f2-e8c4-45e9-8c4a-5eb84b8050fe' => 'MIX|UNMUTE|12|Lay Reader Mic',
+  '8e098337-81b8-4521-a754-f98bc14a3c5a' => 'MIX|MUTE|13|Pastor Mic',
+  '1d2cfdf9-6765-4b25-b898-bffeb8ba727e' => 'MIX|UNMUTE|13|Pastor Mic',
+  '7a529b21-af13-4b60-88dc-93a5726e8f67' => 'MIX|MUTE|14|Comm. Assist. Mic',
+  '3ea027ca-4160-47a9-855d-c4fba6a4c6a5' => 'MIX|UNMUTE|14|Comm. Assist. Mic',
+  'e7eb9e32-30aa-47d3-b40c-f94a0f6e83a3' => 'MIX|MUTE|15-16|CD Audio L-R',
+  '027762d3-6a3c-4918-9828-c63958426dae' => 'MIX|UNMUTE|15-16|CD Audio L-R',
+  'fd79ef32-a856-4031-8174-a3c51fd10ad4' => 'MIX|MUTE|17-18|Stereo MiniJack L-R',
+  'e9dcfd93-a9d0-4d47-ad36-02a7202f37b8' => 'MIX|UNMUTE|17-18|Stereo MiniJack L-R',
+)
+*/	
 	$out = '';
 	if(!isset($item['signals']) or count($item['signals']) < 1) {
 		return '';
@@ -663,7 +764,7 @@ function decode_signal($item,$slideNumber) {
 		$key = $signal['parameters']['SceneId'];
 		$title = $item['title'];
 		if(isset($SignalsList[$key])) {
-			$out .= "[".$SignalsList[$key]."]<br/> ";
+			$out .= "[".$SignalsList[$key]."]<br> ";
 		} else {
 		  $out .= '[Signal: SceneId: '.$signal['parameters']['SceneId'].'] ';
 		}
@@ -677,8 +778,50 @@ function decode_signal($item,$slideNumber) {
 		} else {
 			$Signals[$key][] = "$slideNumber: $title";
 		}
+		if(isset($SignalsListType[$key]) ) {
+			$S = $SignalsListType[$key];
+			if(substr($S,0,3) == 'OBS') {
+				# OBS Signal - 'OBS|Lectern-Zoom+Slides'
+				list($type,$view) = explode('|',$S);
+				$OBSscene = $view;
+			} # end OBS type
+			
+			if(substr($S,0,3) == 'MIX') {
+				# MIX Signal - 'MIX|UNMUTE|13|Pastor Mic'
+				list($type,$action,$channel,$name) = explode('|',$S);
+				if($action == 'MUTE' or $action == 'UNMUTE') {
+					$state = ($action == 'UNMUTE')?'ON':'off';
+				} else{
+					$state = 'unk';
+				}
+				$MixerChan[$channel][0] = $state;
+				
+			} # end MIX type
+			
+		} # end one signal processing
 	}
+	$out .= "<br>\nCurrent Scene: <b>$OBSscene</b><br>\nMixer UNMUTED: ";
+	foreach ($MixerChan as $chan => $S) {
+		if($S[0] == 'ON') {
+		  $out .= $S[1]."(<b>$chan</b>) ";
+		}
+	}
+	$out .= "<br>\n";
+	
 	return $out;
+}
+# ----------------------------------------------------------
+
+function display_avstate() {
+	global $OBSscene,$MixerChan;
+	$out = "<span class=\"avstate\">A/V Scene: \"<span class=\"avstateb\">$OBSscene</span>\" - Mixer UNmuted: ";
+	foreach ($MixerChan as $chan => $S) {
+		if($S[0] == 'ON') {
+		  $out .= $S[1]."(<span class=\"avstateb\">$chan</span>) ";
+		}
+	}
+	$out .= "<br></span>\n";
+  return $out;
 }
 # ----------------------------------------------------------
 
@@ -751,7 +894,7 @@ function xml_spanfix($inXML) {
 
 function format_song($lyricsText,$verseOrder,$copyright,$hymn) {
 	$out = '';
-	$text = str_replace("\n--\n","<br/>\n",trim($lyricsText));
+	$text = str_replace("\n--\n","<br>\n",trim($lyricsText));
 	//$text = trim($lyricsText);
 	$text = str_replace("\n\n",'|',$text);
 	$rawVerses = explode("|",trim($text)."|");
@@ -804,7 +947,7 @@ function format_song($lyricsText,$verseOrder,$copyright,$hymn) {
 	}
   global $highlite;
 	if($highlite == 'S') {
-		$out = '<mark>'.trim($out).'</mark><br/><br/>';
+		$out = '<mark>'.trim($out).'</mark><br><br>';
 	}
 //	$out .= print_r($Verses,true)."\n";
 	$out .= "<span style=\"font-size: 11pt;font-style:italic;\">$copyright</span>\n";
@@ -1026,15 +1169,15 @@ function get_rgb($in) {
 # ----------------------------------------------------------
 
 function cleanup_html($input) {
-	$t = str_replace('li><br/>','li>',$input);
-	$t = str_replace('ol><br/>','ol>',$t);
-	$t = str_replace('ul><br/>','ul>',$t);
+	$t = str_replace('li><br>','li>',$input);
+	$t = str_replace('ol><br>','ol>',$t);
+	$t = str_replace('ul><br>','ul>',$t);
 	$t = str_replace('<p></p>','',$t);
 	$t = str_replace('<strong></strong>','',$t);
 	$t = str_replace("\n</strong>\n",'',$t);
 	$t = str_replace('<em></em>','',$t);
-	$t = preg_replace('!^<br/>\s+!is','',$t);
-	$t = preg_replace('!<br/>\s+$!is','',$t);
+	$t = preg_replace('!^<br>\s+!is','',$t);
+	$t = preg_replace('!<br>\s+$!is','',$t);
 	if($t == '<strong>') {$t = '';}
 	return($t);
 	
@@ -1299,6 +1442,7 @@ function get_video_info($list,$allJSON) {
 function print_css() {
 	if(isset($_GET['avtech']) or isset($_GET['avdetail'])) {
     print '/* AVTECH/AVDETAIL special CSS for printing */
+
 body {
 	font-family: Arial, Helvetica, sans-serif;
   font-size: 16pt;
@@ -1414,10 +1558,10 @@ a:hover, a:active, a:focus {
   return;	
 	} 
 
-	if(isset($_GET['summary'])) {
+	elseif (isset($_GET['summary'])) {
+		
+    print '/* summary CSS for order-of-worship summary only */
 
-    print '/* summary CSS for order-of-worship only */
-/* normal CSS for general printing */
 body {
 	font-family: Arial, Helvetica, sans-serif;
   font-size: 16pt;
@@ -1486,6 +1630,27 @@ a:hover, a:active, a:focus {
   margin: 5px auto !important;
 	display: none;
 }
+.avstate {
+  color: #39F;
+  font-weight: bold;
+  margin: 5px auto !important;
+	display: none;
+}
+.avstate {
+	color: brown;
+	font-size:9pt;
+	font-style:normal;
+	font-weight: normal;
+	padding-left:20px;
+  text-align: left;
+}
+.avstateb {
+	color: red;
+	font-size:10pt;
+	font-style: normal;
+	font-weght: bold;
+}
+
 .service {
   text-align: left;
   color: #000;
@@ -1521,7 +1686,138 @@ a:hover, a:active, a:focus {
 }
 ';
   return;
+} 
+	elseif(isset($_GET['avsummary'])) {
+		
+    print '/* summary CSS for order-of-worship sumary and AVState only */
+
+body {
+	font-family: Arial, Helvetica, sans-serif;
+  font-size: 16pt;
+	background-color: #fff;
+	margin: 0;
+	padding: 0;
+	color: #000;
+  /*width: 600px; */
 }
+
+/* ~~ Element/tag selectors ~~ */
+h1, h2, h3, h4, h5, h6, p, div, ol, ul, dl {
+	margin-top: 5px;	 
+	padding-right: 5px;
+	padding-left: 5px; 
+}
+
+ol, ul, dl {
+  padding-left: 40px;
+  padding-right: 10px;
+}
+li {
+  padding-left: 0px;
+  padding-right: 10px;
+	display: none;
+}
+
+a img { 
+	border: none;
+}
+
+a:link {
+	color: #42413C;
+	text-decoration: underline; 
+}
+a:visited {
+	color: #6E6C64;
+	text-decoration: underline;
+}
+a:hover, a:active, a:focus { 
+	text-decoration: none;
+}
+
+/* ~~ this fixed width container surrounds the other divs ~~ */
+.container {
+	/*width: 800px; */
+	background-color: #FFF;
+	/*margin: 0 auto; /* the auto value on the sides, coupled with the width, centers the layout */
+}
+
+.header {
+	background-color: #ADB96E;
+}
+
+/* ~~ This is the layout information. ~~ 
+*/
+
+.content {
+	padding: 10px 0;
+}
+
+.avcue {
+  text-align: center;
+  color: #39F;
+  font-weight: bold;
+  margin: 5px auto !important;
+	display: none;
+}
+
+.avstate {
+	color: gray;
+	font-size:9pt;
+	font-style:normal;
+	font-weight: normal;
+	padding-left:20px;
+  text-align: left;
+	display: block;
+}
+.avstateb {
+	color: red;
+	font-size:10pt;
+	font-style: normal;
+	font-weight: bold;
+}
+
+.avservice {
+	color: blue;
+	font-size: 12pt;
+	font-weight: bold;
+}
+
+.service {
+  text-align: left;
+  color: #000;
+  margin-bottom: 1em;
+	display: none;
+}
+
+.section {
+  text-align: left;
+  color: #000;
+  text-decoration: none;
+  font-weight: lighter;
+	padding: 0px !important;
+	margin: 5px !important;
+}
+
+.stage {
+  text-align: center;
+  color: #C30;
+  font-weight: normal;
+  font-style: italic;
+  margin: 5px auto !important;
+	display: none;
+}
+.vsignal {
+	display: none;
+}
+
+/* ~~ The footer ~~ */
+.footer {
+	padding: 10px 0;
+	background-color: #CCC49F;
+}
+';
+  return;
+} else {
 
 		print '/* normal CSS for general printing */
 body {
@@ -1626,5 +1922,33 @@ a:hover, a:active, a:focus {
 	background-color: #CCC49F;
 }
 ';
+}
 	
+}
+
+function 	print_avsection(
+		  $kIndex,
+		  $preServiceStartIndex,
+		  $startIndex,
+		  $postServiceStartIndex,
+		  $itemCount
+		) {
+	$type = '';
+	$dashes = str_repeat('-',15);
+	if($kIndex == 0 and 
+	   $preServiceStartIndex > 0) {
+		$type = "PreService Loop";
+	}
+  if($kIndex == $preServiceStartIndex) {
+		$type = "Warm-Up";
+	}
+	if($kIndex == $startIndex) {
+		$type = "Service";
+	}
+	if($kIndex == $postServiceStartIndex) {
+		$type = "PostService Loop";
+	}
+	if ($type == '') { return; }
+	print "<p class=\"avservice\">$dashes $type $dashes </p>\n";
+			
 }

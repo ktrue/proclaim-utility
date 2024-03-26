@@ -36,6 +36,8 @@ $SignalsList = array (
   '3ea027ca-4160-47a9-855d-c4fba6a4c6a5' =>  'signal: sound mixer <strong>UNMUTE 14 Comm. Assist. Mic</strong>',
   'e7eb9e32-30aa-47d3-b40c-f94a0f6e83a3' =>  'signal: sound mixer <strong>MUTE 15-16 CD Audio L-R</strong>',
   '027762d3-6a3c-4918-9828-c63958426dae' =>  'signal: sound mixer <strong>UNMUTE 15-16 CD Audio L-R</strong>',
+  '09746c95-ebd0-4b92-ac69-6d87244c12ef' =>  'signal: sound mixer <strong>15-16 CD Audio L-R Faders to Zero</strong>',
+  '4c7f9aa3-2d63-4180-bde5-0c0f2eaaf12a' =>  'signal: sound mixer <strong>15-16 CD Audio L-R Faders to Normal</strong>',
   'fd79ef32-a856-4031-8174-a3c51fd10ad4' => 'signal: sound mixer <strong>MUTE 17-18 Stereo MiniJack L-R</strong>',
   'e9dcfd93-a9d0-4d47-ad36-02a7202f37b8' => 'signal: sound mixer <strong>UNMUTE 17-18 Stereo MiniJack L-R</strong>',
 
