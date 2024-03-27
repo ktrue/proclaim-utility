@@ -65,6 +65,7 @@
 # Version 1.212 - 14-Nov-2023 - fixed Notice errata on $play
 # Version 1.213 - 22-Mar-2024 - fixed Song notes to honor new-lines
 # Version 1.214 - 25-Mar-2024 - added avtech display for scene and mixer unmuted channels
+# Version 1.215 - 27-Mar-2024 - added audio decoding for pre/warm-up/service/post loops to avsummary
 
 
 include_once("settings-common.php");
@@ -81,7 +82,7 @@ $lookfor = array( # service participants in open text
 );
 
 
-$Version = 'roadmap.php - Version 1.214 - 25-Mar-2024';
+$Version = 'roadmap.php - Version 1.215 - 27-Mar-2024';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -602,7 +603,6 @@ function decode_lyrics($item) {
 	$useVerseOrder = isset($item['content']['CustomOrderSlides'])?$item['content']['CustomOrderSlides']:'';
 	$verseOrder = isset($item['content']['CustomOrderSequence'])?$item['content']['CustomOrderSequence']:'';
 	$lyricsText = '';
-
 	$other = '<span style="font-size: 12px;color: green;display: block; padding-left: 2em;">';
 	if($verseOrder == '') {
 		$other .= '[all verses]'; 
@@ -1346,6 +1346,7 @@ function who_does($text) {
 	return('');
 }
 
+#---------------------------------------------------------  
 
 function get_audio_info($list,$allJSON) {
 	$t = '';
@@ -1435,6 +1436,94 @@ function get_video_info($list,$allJSON) {
 		print "<!-- get_video_info .. allJSON ".var_export($list,true)." not found -->\n";
 	}
 	return($t);
+}
+
+
+# ----------------------------------------------------------
+
+function 	print_avsection(
+		  $kIndex,
+		  $preServiceStartIndex,
+		  $startIndex,
+		  $postServiceStartIndex,
+		  $itemCount
+		) {
+	$type = '';
+	$dashes = str_repeat('-',15);
+	if($kIndex == 0 and 
+	   $preServiceStartIndex > 0) {
+		$type = "PreService Loop";
+		$audio = decode_section_audio('PreServiceLoopAudio');
+	}
+  if($kIndex == $preServiceStartIndex) {
+		$type = "Warm-Up";
+		$audio = decode_section_audio('PreServiceAudio');
+	}
+	if($kIndex == $startIndex) {
+		$type = "Service";
+		$audio = decode_section_audio('ServiceAudio');
+	}
+	if($kIndex == $postServiceStartIndex) {
+		$type = "PostService Loop";
+		$audio = decode_section_audio('PostServiceAudio');
+	}
+	if ($type == '') { return; }
+	print "<p class=\"avservice\">$dashes $type $dashes </p>\n";
+	if(strlen($audio) > 0) {
+		print "<p class=\"avstate\">$audio</p>\n";
+	}
+			
+}
+
+# ----------------------------------------------------------
+
+function decode_section_audio($key) {
+	global $JSON,$allJSON;
+/*	
+  "content": {
+
+    "PreServiceLoopAudio": "{\"setting\":0,\"continueSetting\":0,\"audioTracks\":[],\"uploadJobIds\":[],\"isDividerItem\":true,\"overrideUseAudio\":false,\"localFileContents\":{}}",
+    "PreServiceLoopShuffleAudio": "false",
+
+    "PreServiceAudio": "{\"setting\":0,\"continueSetting\":0,\"audioTracks\":[],\"uploadJobIds\":[],\"isDividerItem\":true,\"overrideUseAudio\":false,\"localFileContents\":{}}",
+    "WarmUpShuffleAudio": "false",
+
+    "ServiceAudio": "{\"setting\":0,\"continueSetting\":0,\"audioTracks\":[],\"uploadJobIds\":[],\"isDividerItem\":true,\"overrideUseAudio\":false,\"localFileContents\":{}}",
+    "ServiceLoopShuffleAudio": "false",
+
+    "PostServiceAudio": "{\"setting\":0,\"continueSetting\":0,\"audioTracks\":[],\"uploadJobIds\":[],\"isDividerItem\":true,\"overrideUseAudio\":false,\"localFileContents\":{}}",
+    "PostServiceLoopShuffleAudio": "false"
+  }
+	
+*/
+
+  $out = '';
+	if(isset($JSON['content'][$key])) {
+		
+		$tJ = json_decode($JSON['content'][$key],true);
+		if(count($tJ['audioTracks']) > 0) {
+		  $out .= "<!-- Audio for $key<br> = <pre class=\"avstate\">".var_export($tJ,true)."</pre> -->\n";
+		} else {
+			$out .= "No Audio tracks for $key";
+		}
+		$br = '';
+		foreach ($tJ['audioTracks'] as $i => $id) {
+			if(isset($allJSON[$id])) {
+				$track = json_decode($allJSON[$id],true);
+				$ext = isset($track['audio']['audioFile']['mediaFileExtensions'][0]['extension'])?
+				 ".".$track['audio']['audioFile']['mediaFileExtensions'][0]['extension']:'';
+				$out .= "<!-- <br><br>id $id:<br><pre class=\"avstate\">".var_export($track,true)."</pre> -->\n";
+				$out .= isset($track['audio']['title'])?"{$br}PLAY: \"<span class=\"avstateb\">".$track['audio']['title']."$ext</span>\"":'';
+				$out .= isset($track['audio']['duration'])?" (duration ".substr($track['audio']['duration'],0,10).")":'';
+				$out .= isset($track['audio']['artist'])?"<br>Artist: ".$track['audio']['artist']:'';
+				$out .= isset($track['audio']['album'])?"<br>Album: ".$track['audio']['album']:'';
+				$out .= isset($track['audio']['trackNumber'])?" Track: ".$track['audio']['trackNumber']:'';
+			}
+			$br = '<br>';
+		}
+
+	} # end .. got a key
+  return($out);
 }
 
 # ----------------------------------------------------------
@@ -1924,31 +2013,4 @@ a:hover, a:active, a:focus {
 ';
 }
 	
-}
-
-function 	print_avsection(
-		  $kIndex,
-		  $preServiceStartIndex,
-		  $startIndex,
-		  $postServiceStartIndex,
-		  $itemCount
-		) {
-	$type = '';
-	$dashes = str_repeat('-',15);
-	if($kIndex == 0 and 
-	   $preServiceStartIndex > 0) {
-		$type = "PreService Loop";
-	}
-  if($kIndex == $preServiceStartIndex) {
-		$type = "Warm-Up";
-	}
-	if($kIndex == $startIndex) {
-		$type = "Service";
-	}
-	if($kIndex == $postServiceStartIndex) {
-		$type = "PostService Loop";
-	}
-	if ($type == '') { return; }
-	print "<p class=\"avservice\">$dashes $type $dashes </p>\n";
-			
 }
