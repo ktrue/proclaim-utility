@@ -66,6 +66,7 @@
 # Version 1.213 - 22-Mar-2024 - fixed Song notes to honor new-lines
 # Version 1.214 - 25-Mar-2024 - added avtech display for scene and mixer unmuted channels
 # Version 1.215 - 27-Mar-2024 - added audio decoding for pre/warm-up/service/post loops to avsummary
+# Version 1.216 - 15-Nov-2024 - added verse displays to songs in song leader highlight display
 
 
 include_once("settings-common.php");
@@ -82,7 +83,7 @@ $lookfor = array( # service participants in open text
 );
 
 
-$Version = 'roadmap.php - Version 1.215 - 27-Mar-2024';
+$Version = 'roadmap.php - Version 1.216 - 15-Nov-2024';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -954,8 +955,8 @@ function format_song($lyricsText,$verseOrder,$copyright,$hymn) {
 	
 //	$out .= "--------\n";
 	
-	
-	return($out);
+	$verseString = ($highlite == 'S')?"<span class=\"verses\">[$verseOrder]</span>\n\n":'';
+	return($verseString.$out);
 }
 
 # ----------------------------------------------------------
@@ -1637,6 +1638,9 @@ a:hover, a:active, a:focus {
 	font-style: italic;
 	font-size: 12pt;
 }
+.verses {
+  display: none;
+}
 
 /* ~~ The footer ~~ */
 .footer {
@@ -1767,7 +1771,9 @@ a:hover, a:active, a:focus {
 .vsignal {
 	display: none;
 }
-
+.verses {
+  display: none;
+}
 /* ~~ The footer ~~ */
 .footer {
 	padding: 10px 0;
@@ -1898,6 +1904,9 @@ a:hover, a:active, a:focus {
 .vsignal {
 	display: none;
 }
+.verses {
+  display: none;
+}
 
 /* ~~ The footer ~~ */
 .footer {
@@ -2003,6 +2012,13 @@ a:hover, a:active, a:focus {
 }
 .vsignal {
 	display: none;
+}
+.verses {
+	text-align: left;
+	color: green;
+	font-weight: normal;
+	font-style: italic;
+	font-size: 12pt;
 }
 
 /* ~~ The footer ~~ */
