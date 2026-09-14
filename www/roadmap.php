@@ -69,6 +69,9 @@
 # Version 1.216 - 15-Nov-2024 - added verse displays to songs in song leader highlight display
 # Version 1.217 - 13-Jan-2025 - improve avsummary display
 # Version 1.218 - 07-Feb-2025 - add avcue display to avsummary
+# Version 1.219 - 07-Apr-2025 - add Reader2 support for highlighting
+# Version 1.220 - 17-Jul-2026 - add support for Pastor led songs
+# Version 1.221 - 14-Sep-2026 - add ?bulletin display with titles + song lyrics
 
 
 include_once("settings-common.php");
@@ -77,15 +80,16 @@ global $lookfor;
 $lookfor = array( # service participants in open text
 	'lay reader:'  => 'L', # Note: Scripture will generally be highlited for Lay Reader/Lay Leader
 	'lay leader:'  => 'L',
+  'reader2'      => 'R',
 #	'congregation:'  => 'L',
-	'song leader:' => 'S', # Note: Songs will always be highlited for Song Leader
+	'song leader:' => 'S', # Note: Songs will always be highlited for Song Leader unless Pastor: in title
 	'pastor:'		  => 'P',
 #	'Chancel:'		  => 'P',
 #	'communion assistant:' => 'C',
 );
 
 
-$Version = 'roadmap.php - Version 1.218 - 07-Feb-2025';
+$Version = 'roadmap.php - Version 1.221 - 14-Sep-2026';
 date_default_timezone_set($SITE['timezone']);
 $includeMode = isset($doInclude)?true:false;
 $testMode = false;
@@ -169,11 +173,13 @@ if((isset($_GET['list']) or isset($_GET['listall'])) and !isset($_FILES['upload'
 		}
 		print "<li>$tNextStart<a href=\"?show=$link\">$name Roadmap</a> | <small><small> ";
 		print "<a href=\"?show=$link&amp;avtech\">A/V operator</a> | ";
-		print "<a href=\"?show=$link&amp;summary\">Summary/Outline</a> | Highlite: ( ";
+		print "<a href=\"?show=$link&amp;summary\">Summary/Outline</a> | "; 
+    print "<a href=\"?show=$link&amp;bulletin\">Bulletin</a> | Highlite: ( ";
 		print "<a href=\"?show=$link&amp;hilite=past\">Pastor</a> | ";
 		print "<a href=\"?show=$link&amp;hilite=lay\">Lay Reader</a> | ";
 		print "<a href=\"?show=$link&amp;hilite=song\">Song Leader</a>";
-#		print "<a href=\"?show=$link&amp;hilite=ca\">Comm. Asst.</a> ";
+   # print " | <a href=\"?show=$link&amp;hilite=rdr2\">Reader2</a>";
+#		print " | <a href=\"?show=$link&amp;hilite=ca\">Comm. Asst.</a> ";
 		print ")";
 		print " | <a href=\"?show=$link&amp;avdetail\">detailed A/V cues</a>";
 		print " | <a href=\"?show=$link&amp;avsummary\">summary A/V cues</a>";
@@ -279,9 +285,13 @@ if (isset($_GET['hilite']) ) {
 	$highlite = (strpos($t,'song') !== false)?'S':$highlite;
 	$highlite = (strpos($t,'pas')  !== false)?'P':$highlite;
 	$highlite = (strpos($t,'ca')   !== false)?'C':$highlite;
+	$highlite = (strpos($t,'dr2')  !== false)?'R':$highlite;
 }
 
 $title = "Worship Roadmap - $serviceDate";
+if(isset($_GET['bulletin'])) {
+  $title = "Worship Service - $serviceDate";
+}
 if(isset($_GET['avtech'])) {
 	$title = "A/V Operator - " . $title;
 }
@@ -306,6 +316,9 @@ if($highlite == 'P') {
 if($highlite == 'C') {
 	$title .= "<br><small>Highlighted for <mark>Communion Assistant</mark></small>";
 }
+if($highlite == 'R') {
+	$title .= "<br><small>Highlighted for <mark>Reader2</mark></small>";
+}
 
 do_print_header($title,'Updated: '.date('l, F d, Y g:i:sa',strtotime($latestModifiedDate)));
 
@@ -313,9 +326,12 @@ if(isset($_GET['avsummary']) or isset($_GET['avtech'])) {
   print "<!-- SignalsListType = \n".var_export($SignalsListType,true). " -->\n";
   print "<!-- MixerChan = \n".var_export($MixerChan,true). " -->\n";
 }
-
-print "<h3 style=\"text-align:center;margin: 0 auto !important;\">$title</h3>\n";
-print "<h5 style=\"text-align:center;margin: 0 auto !important;\">Updated: ".date('l, F d, Y g:i:sa',strtotime($latestModifiedDate))."</h5>\n";
+if(!isset($_GET['bulletin'])) {
+  print "<h3 style=\"text-align:center;margin: 0 auto !important;\">$title</h3>\n";
+  print "<h5 style=\"text-align:center;margin: 0 auto !important;\">Updated: ".date('l, F d, Y g:i:sa',strtotime($latestModifiedDate))."</h5>\n";
+} else {
+  print "<p><strong>$title</strong></p>\n";
+}
 print "<!-- ".count($allJSON)." allJSON entries loaded -->\n";
 if(isset($_GET['avsummary'])) {
 	$kIndexStart = 0;
@@ -325,6 +341,7 @@ if(isset($_GET['avsummary'])) {
 	$kIndexEnd  =  $JSON['postServiceStartIndex'];
 }
 print "<!-- processing entries $kIndexStart up to $kIndexEnd -->\n";
+$lastTitle = '';
 for ($kIndex=$kIndexStart;$kIndex<$kIndexEnd;$kIndex++) {
   $item = $JSON['items'][$kIndex];
 	$title = $item['title'];
@@ -347,10 +364,19 @@ for ($kIndex=$kIndexStart;$kIndex<$kIndexEnd;$kIndex++) {
 		continue;
 		
 	}
+  global $pastorSong,$highlite;
 	if($kind == "SongLyrics") {
-		 list($lyrics,$other) = decode_lyrics($item);
-		 if(strlen($roadmapText) > 0) {
-       $roadmapText = do_highlite($roadmapText,$title);
+     
+     $pastorSong = (stripos($title,'Pastor:') !== false)?true:false;
+     if($pastorSong) {
+       $pTitle = 'Pastor:';
+       $title = str_replace('Pastor: ','',$title);
+     } else {
+       $pTitle = 'Song Leader:';
+     }
+		list($lyrics,$other) = decode_lyrics($item,$pTitle);
+  	 if(strlen($roadmapText) > 0) {
+       $roadmapText = do_highlite($roadmapText,$pTitle.' '.$title);
 			 $roadmapText = str_replace("\n","<br>\n",$roadmapText);
 			 $roadmapText .= "<br><br>\n";
 		   $extraText = $roadmapText.$lyrics;
@@ -359,11 +385,13 @@ for ($kIndex=$kIndexStart;$kIndex<$kIndexEnd;$kIndex++) {
 		   $extraText = $lyrics;
 		 }
 		 $hymn =      isset($item['content']['_textfield:Hymn Number'])?$item['content']['_textfield:Hymn Number']:'';
-		 if(strlen($hymn) > 0) { 
-		   $title = "Song: \"<em>$title</em>\" ($hymn)";
+     if(isset($_GET['bulletin'])) {$pTitle = '';}
+ 		 if(strlen($hymn) > 0) { 
+		   $title = "$pTitle Song \"<em>$title</em>\" ($hymn)";
 		 } else {
-		   $title = "Song: \"<em>$title</em>\"";
+		   $title = "$pTitle Song \"<em>$title</em>\"";
 		 }
+     #$title .= $pastorSong?' (Pastor Song Lead)':'';
 		 if(isset($_GET['summary']) or isset($_GET['avsummary'])) {
 			 $title .= "<br>$other";
 		 }
@@ -388,11 +416,12 @@ for ($kIndex=$kIndexStart;$kIndex<$kIndexEnd;$kIndex++) {
 				}
 			 }
 		 }
-			 
+		 $pastorSong = false; # reset for next song
+
 	}
 	if($kind == "BiblePassage") {
 		 list($bible,$other) = decode_bible_passage($item);
-		 if(preg_match('!^Scripture!i',$title) ) {
+		 if(preg_match('!^Scripture!i',$title) and !isset($_GET['bulletin']) ) {
 			 $extraText = do_highlite($bible,"Lay Reader: ".$title);
 		 } else {
 			 $extraText = do_highlite($bible,$title);
@@ -406,12 +435,22 @@ for ($kIndex=$kIndexStart;$kIndex<$kIndexEnd;$kIndex++) {
 		 list($contentText,$other) = decode_content($item);
 		 $contentText = do_highlite($contentText,$title);
 		 $extraText = str_replace("\n","<br>\n",$contentText);
+     if(isset($_GET['bulletin'])) {
+       $title = str_replace(
+         array('Pastor: ','Lay Reader: ','Song Leader: '),
+         array('','',''),$title);
+     }
 	}
 	if($kind == "Announcement") {
 	   list($contentText,$other) = decode_announcement($item);
 		 $contentText = do_highlite($contentText,$title);
 		 $extraText = str_replace("\n","<br>\n",$contentText);
-		 if((isset($_GET['summary']) or isset($_GET['avsummary'])) 
+     if(isset($_GET['bulletin'])) {
+       $title = str_replace(
+         array('Pastor: ','Lay Reader: ','Song Leader: '),
+         array('','',''),$title);
+     }
+		 if((isset($_GET['summary']) or isset($_GET['avsummary']) or isset($_GET['bulletin'])) 
 		    and is_array($summaryAnnounce) and !empty($summaryAnnounce[0]) ) {
 			 foreach ($summaryAnnounce as $i => $tstr) {
 				 if(stripos($title,$tstr) !== false) {
@@ -511,17 +550,26 @@ for ($kIndex=$kIndexStart;$kIndex<$kIndexEnd;$kIndex++) {
 	
 	if($kind !== 'StageDirectionCue') {
 		$avstate = isset($_GET['avsummary'])?display_avstate():'';
-		print "<p class=\"section\">$avstate<strong>$title</strong>$autoAdvanceText\n<!-- end class=section -->\n</p>\n";  // slide name is underlined heading
+    if(!isset($_GET['bulletin'])) {
+		  print "<p class=\"section\">$avstate<strong>$title</strong>$autoAdvanceText\n<!-- end class=section -->\n</p>\n";  // slide name is underlined heading
+    } elseif (isset($_GET['bulletin']) and $title == $lastTitle) {
+      // don't print
+    } elseif (isset($_GET['bulletin']) and                in_array($title,array('Credits','Copyright','Goodbye'))) {
+      // don't print endings after postlude
+    } else {
+ 		  print "<p class=\"section\">$avstate<strong>$title</strong>$autoAdvanceText\n<!-- end class=section -->\n</p>\n";  // slide name is underlined heading
+ 
+    }
 		if(strlen($extraText) > 1) { // print all following stuff in slide if need be
-		  print "<!-- extraText='$extraText' -->\n";
+		  #print "<!-- extraText='$extraText' -->\n";
 			$extraText = cleanup_html(trim($extraText));
 			print "<p class=\"service\"><!-- extraText -->$extraText\n<!-- end class=service -->\n</p>\n";
 		}
 	} else { // special handling for stage direction
-		if(strlen($extraText) > 0) {
+		if(strlen($extraText) > 0 and !isset($_GET['bulletin'])) {
 		  print "<p class=\"stage\">($extraText)\n<!-- end class=stage -->\n</p>\n";
 		}
-		if(strlen($other) > 0) {
+		if(strlen($other) > 0 and !isset($_GET['bulletin'])) {
 			$other = cleanup_html($other);
 			$other = do_highlite($other,$title);
 			$other = str_replace("\n","<br>\n",$other);
@@ -532,6 +580,7 @@ for ($kIndex=$kIndexStart;$kIndex<$kIndexEnd;$kIndex++) {
 		}
 	}
 	print "\n";
+  $lastTitle = $title;
 }
 $footerText = "<small><small>This roadmap generated by $Version<br>";
 $footerText .= "from Proclaim slides '<strong>".$JSON['title']."</strong>' for the <strong>".
@@ -584,7 +633,7 @@ function decode_notes($item) {
 
 # ----------------------------------------------------------
 
-function decode_lyrics($item) {
+function decode_lyrics($item,$pTitle) {
 
   if(!isset($item['content']['_richtextfield:Lyrics'])) {
 	  return(array('',''));
@@ -622,9 +671,9 @@ function decode_lyrics($item) {
     list($lyricsText,$other2) = xml_to_html($rawLyricsXML,false);
 	}
 	
-	$formattedSong = format_song($lyricsText,$verseOrder,$copyright,$hymn);
+	$formattedSong = format_song($lyricsText,$verseOrder,$copyright,$hymn,$pTitle);
 	$formattedSong = str_replace("\n","<br>\n",$formattedSong);
-	return (array($formattedSong,$other));
+  return (array($formattedSong,$other));
 	
 }
 
@@ -644,6 +693,9 @@ function decode_content($item) {
 		list($main,$extra) = xml_to_html($rawContent);
 		
 	}
+  if(isset($_GET['bulletin'])) {
+    $main = "</p><div class=\"lyrics\">$main</div><p style=\"display: none;\">\n";
+  }
 	return( array( trim($main),trim($extra) ) );
 }
 
@@ -895,7 +947,9 @@ function xml_spanfix($inXML) {
 
 # ----------------------------------------------------------
 
-function format_song($lyricsText,$verseOrder,$copyright,$hymn) {
+function format_song($lyricsText,$verseOrder,$copyright,$hymn,$pTitle) {
+  global $pastorSong;
+  $tCopyright = $copyright;
 	$out = '';
 	$text = str_replace("\n--\n","<br>\n",trim($lyricsText));
 	//$text = trim($lyricsText);
@@ -940,25 +994,38 @@ function format_song($lyricsText,$verseOrder,$copyright,$hymn) {
 //	$out .= "--------\nDebug:\n";
 //	$out .= "VerseOrder: $verseOrder\n";
 //	$out .= "useVerses: ".print_r($useVerses,true)."\n";
+  $tLyrics = '';
 	foreach ($useVerses as $i => $key) {
 		if(isset($_GET['debuglyrics'])) {
 			$out .= "([$i]='$key')";
 		}
 		if(isset($Verses[$key])) {
 			$out .= $Verses[$key]. "\n";
+      $tLyrics .= $Verses[$key]."\n";
 		}
 	}
-  global $highlite;
-	if($highlite == 'S') {
+  #$tLyrics = $out;
+  global $highlite,$pastorSong;
+	if(($highlite == 'S' and stripos($pTitle,'Song leader') !== false) or 
+     ($highlite == 'P' and stripos($pTitle,'Pastor') !== false)) {
 		$out = '<mark>'.trim($out).'</mark><br><br>';
 	}
 //	$out .= print_r($Verses,true)."\n";
+  
 	$out .= "<span style=\"font-size: 11pt;font-style:italic;\">$copyright</span>\n";
 	
 //	$out .= "--------\n";
 	
-	$verseString = ($highlite == 'S')?"<span class=\"verses\">[$verseOrder]</span>\n\n":'';
-	return($verseString.$out);
+	$verseString = (($highlite == 'S' and stripos($pTitle,'Song leader') !== false) or 
+     ($highlite == 'P' and stripos($pTitle,'Pastor') !== false))?
+    "<span class=\"verses\">[$verseOrder]</span>\n\n":'';
+    $tLyrics = '</p><div class="lyrics">'.$tLyrics. 
+      "<span style=\"font-size: 8pt;font-style:italic;\">$tCopyright</span></div><p style=\"display: none;\">\n";
+  if(isset($_GET['bulletin'])) {
+    return($verseString.$tLyrics);
+  } else {
+	  return($verseString.$out); 
+  }
 }
 
 # ----------------------------------------------------------
@@ -1223,9 +1290,11 @@ function do_print_header($title,$subtitle='') {
 function do_print_footer($text) {
 ?>
     <!-- end .content --></div>
+  <?php if(!isset($_GET['bulletin'])) { ?>
   <div class="footer">
     <p><?php echo $text; ?></p>
     <!-- end .footer --></div>
+  <?php } ?>
   <!-- end .container --></div>
 </body>
 </html>
@@ -1643,6 +1712,9 @@ a:hover, a:active, a:focus {
 .verses {
   display: none;
 }
+.lyrics {
+ display: none;
+}
 
 /* ~~ The footer ~~ */
 .footer {
@@ -1743,7 +1815,7 @@ a:hover, a:active, a:focus {
 	color: red;
 	font-size:10pt;
 	font-style: normal;
-	font-weght: bold;
+	font-weight: bold;
 }
 
 .service {
@@ -1776,6 +1848,148 @@ a:hover, a:active, a:focus {
 .verses {
   display: none;
 }
+.lyrics {
+ display: none;
+}
+/* ~~ The footer ~~ */
+.footer {
+	padding: 10px 0;
+	background-color: #CCC49F;
+}
+';
+  return;
+} 
+	elseif (isset($_GET['bulletin'])) {
+		
+    print '/* bulletin CSS for order-of-worship summary only */
+
+body {
+	font-family: Arial, Helvetica, sans-serif;
+  font-size: 12pt;
+	background-color: #fff;
+	margin: 0;
+	padding: 0;
+	color: #000;
+  /*width: 600px; */
+}
+
+/* ~~ Element/tag selectors ~~ */
+h1, h2, h3, h4, h5, h6, p, div, ol, ul, dl {
+	margin-top: 5px;	 
+	padding-right: 5px;
+	padding-left: 5px; 
+}
+
+ol, ul, dl {
+  padding-left: 40px;
+  padding-right: 10px;
+}
+li {
+  padding-left: 0px;
+  padding-right: 10px;
+	display: none;
+}
+
+a img { 
+	border: none;
+}
+
+a:link {
+	color: #42413C;
+	text-decoration: underline; 
+}
+a:visited {
+	color: #6E6C64;
+	text-decoration: underline;
+}
+a:hover, a:active, a:focus { 
+	text-decoration: none;
+}
+
+/* ~~ this fixed width container surrounds the other divs ~~ */
+.container {
+	/*width: 800px; */
+	background-color: #FFF;
+	/*margin: 0 auto; /* the auto value on the sides, coupled with the width, centers the layout */
+}
+
+.header {
+	background-color: #ADB96E;
+}
+
+/* ~~ This is the layout information. ~~ 
+*/
+
+.content {
+	padding: 10px 0;
+}
+
+.avcue {
+  text-align: center;
+  color: #39F;
+  font-weight: bold;
+  margin: 5px auto !important;
+	display: none;
+}
+.avstate {
+  color: #39F;
+  font-weight: bold;
+  margin: 5px auto !important;
+	display: none;
+}
+.avstate {
+	color: brown;
+	font-size:9pt;
+	font-style:normal;
+	font-weight: normal;
+	padding-left:20px;
+  text-align: left;
+}
+.avstateb {
+	color: red;
+	font-size:10pt;
+	font-style: normal;
+	font-weight: bold;
+}
+
+.service {
+  text-align: left;
+  color: #000;
+  margin-bottom: 1em;
+	display: none;
+}
+
+.section {
+  text-align: left;
+  color: #000;
+  text-decoration: none;
+  font-weight: lighter;
+	padding: 0px !important;
+	margin: 5px !important;
+}
+
+.stage {
+  text-align: center;
+  color: #C30;
+  font-weight: normal;
+  font-style: italic;
+  margin: 5px auto !important;
+	display: none;
+}
+.vsignal {
+	display: none;
+}
+.verses {
+  display: none;
+}
+.lyrics {
+  text-align: left;
+  color: #000;
+  margin-bottom: 1em;
+  margin-left: 2em;
+  font-style: italic;
+}
+
 /* ~~ The footer ~~ */
 .footer {
 	padding: 10px 0;
@@ -2024,6 +2238,9 @@ a:hover, a:active, a:focus {
 	font-weight: normal;
 	font-style: italic;
 	font-size: 12pt;
+}
+.lyrics {
+ display: none;
 }
 
 /* ~~ The footer ~~ */
